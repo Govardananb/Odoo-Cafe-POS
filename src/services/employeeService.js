@@ -1,9 +1,9 @@
 const STORAGE_KEY = "odoo_cafe_employees";
 
 const DEFAULT_EMPLOYEES = [
-  { id: "1", name: "Govardanan B", role: "Manager", email: "govardanan@odoocafe.com", status: "Active" },
-  { id: "2", name: "Sneha M", role: "Cashier", email: "sneha@odoocafe.com", status: "Active" },
-  { id: "3", name: "Aditya K", role: "Chef", email: "aditya@odoocafe.com", status: "Active" }
+  { id: "1", name: "Govardanan B", role: "admin", email: "govardanan@odoocafe.com", status: "Active" },
+  { id: "2", name: "Sneha M", role: "employee", email: "sneha@odoocafe.com", status: "Active" },
+  { id: "3", name: "Aditya K", role: "employee", email: "aditya@odoocafe.com", status: "Active" }
 ];
 
 const getStored = () => {
@@ -13,7 +13,24 @@ const getStored = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_EMPLOYEES));
     return DEFAULT_EMPLOYEES;
   }
-  return JSON.parse(data);
+  
+  // Normalize legacy roles
+  let list = JSON.parse(data);
+  let migrated = false;
+  list = list.map(emp => {
+    if (emp.role === "Manager" || emp.role === "Admin") {
+      emp.role = "admin";
+      migrated = true;
+    } else if (emp.role === "Cashier" || emp.role === "Chef") {
+      emp.role = "employee";
+      migrated = true;
+    }
+    return emp;
+  });
+  if (migrated) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  }
+  return list;
 };
 
 const save = (data) => {

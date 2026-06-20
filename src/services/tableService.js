@@ -1,11 +1,26 @@
 const STORAGE_KEY = "odoo_cafe_tables";
 
 const DEFAULT_TABLES = [
-  { id: "1", name: "Table 1", capacity: 2, status: "Available" },
-  { id: "2", name: "Table 2", capacity: 4, status: "Available" },
-  { id: "3", name: "Table 3", capacity: 4, status: "Occupied" },
-  { id: "4", name: "Table 4", capacity: 6, status: "Available" },
-  { id: "5", name: "Table 5", capacity: 2, status: "Available" }
+  // Ground Floor (floorId: "1")
+  { id: "g1", number: "T01", capacity: 2, floorId: "1", status: "Available" },
+  { id: "g2", number: "T02", capacity: 4, floorId: "1", status: "Occupied" },
+  { id: "g3", number: "T03", capacity: 4, floorId: "1", status: "Available" },
+  { id: "g4", number: "T04", capacity: 6, floorId: "1", status: "Reserved" },
+  { id: "g5", number: "T05", capacity: 2, floorId: "1", status: "Disabled" },
+  { id: "g6", number: "T06", capacity: 8, floorId: "1", status: "Available" },
+
+  // First Floor (floorId: "2")
+  { id: "f1", number: "T11", capacity: 4, floorId: "2", status: "Available" },
+  { id: "f2", number: "T12", capacity: 4, floorId: "2", status: "Occupied" },
+  { id: "f3", number: "T13", capacity: 2, floorId: "2", status: "Reserved" },
+  { id: "f4", number: "T14", capacity: 6, floorId: "2", status: "Available" },
+  { id: "f5", number: "T15", capacity: 2, floorId: "2", status: "Disabled" },
+
+  // Rooftop Garden (floorId: "3")
+  { id: "r1", number: "T21", capacity: 4, floorId: "3", status: "Available" },
+  { id: "r2", number: "T22", capacity: 6, floorId: "3", status: "Occupied" },
+  { id: "r3", number: "T23", capacity: 2, floorId: "3", status: "Available" },
+  { id: "r4", number: "T24", capacity: 4, floorId: "3", status: "Reserved" }
 ];
 
 const getStored = () => {

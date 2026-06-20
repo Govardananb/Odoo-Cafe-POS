@@ -29,20 +29,13 @@ body {
   overflow-x: hidden;
 }
 
-/* Custom Scrollbar */
+/* Hide Scrollbar Globally */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  display: none;
 }
-::-webkit-scrollbar-track {
-  background: #0B0B0B;
-}
-::-webkit-scrollbar-thumb {
-  background: #232323;
-  border-radius: 99px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #FF6B1A;
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
 }
 
 /* Page transitions */
@@ -89,5 +82,14 @@ body {
   );
   animation: shimmer 2s infinite;
   content: '';
+}
+
+/* Hide scrollbar utility */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
 }
 

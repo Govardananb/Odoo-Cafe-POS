@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Coffee,
@@ -23,12 +23,22 @@ import {
 
 export default function Sidebar({ isCollapsed, setIsCollapsed }) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = (e) => {
+    e.preventDefault();
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("currentUser");
+      router.replace("/login");
+    }
+  };
 
   const navigation = [
     {
       section: "OVERVIEW",
       items: [
-        { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" }
+        { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
+        { id: "pos", label: "POS Terminal", icon: ShoppingBag, href: "/pos" }
       ]
     },
     {
@@ -133,7 +143,11 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
                         <span className="absolute left-0 top-2 bottom-2 w-[3px] bg-[#FF6B1A] rounded-r-md" />
                       )}
 
-                      <Link href={item.href} className={buttonClass}>
+                      <Link 
+                        href={item.href} 
+                        className={buttonClass}
+                        onClick={item.id === "logout" ? handleLogout : undefined}
+                      >
                         <div className="flex items-center gap-3">
                           <Icon 
                             size={16} 

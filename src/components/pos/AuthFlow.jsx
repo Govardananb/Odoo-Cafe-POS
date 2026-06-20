@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Logo from "@/components/layout/Logo";
+import { employeeService } from "@/services/employeeService";
 
 export default function AuthFlow({ initialScreen = "login" }) {
   const router = useRouter();
@@ -43,16 +44,35 @@ export default function AuthFlow({ initialScreen = "login" }) {
     setError("");
     setLoading(true);
     
-    setTimeout(() => {
-      setLoading(false);
-      if (!name) {
-        const emailPrefix = email.split("@")[0];
-        setEmployeeName(emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1));
-      } else {
-        setEmployeeName(name);
-      }
-      setScreen("session");
-    }, 1200);
+    employeeService.getEmployees()
+      .then((employees) => {
+        let emp = employees.find(e => e.email.toLowerCase() === email.toLowerCase());
+        if (!emp) {
+          const namePrefix = email.split("@")[0];
+          const formattedName = namePrefix.charAt(0).toUpperCase() + namePrefix.slice(1);
+          return employeeService.addEmployee({
+            name: formattedName,
+            email: email.toLowerCase(),
+            role: email.toLowerCase().includes("admin") || email.toLowerCase().includes("manager") ? "admin" : "employee",
+            status: "Active"
+          });
+        }
+        return emp;
+      })
+      .then((emp) => {
+        const userSession = { ...emp };
+        localStorage.setItem("currentUser", JSON.stringify(userSession));
+        setLoading(false);
+        if (userSession.role === "admin") {
+          router.push("/dashboard");
+        } else {
+          router.push("/pos");
+        }
+      })
+      .catch((err) => {
+        setError(err.message || "Failed to log in.");
+        setLoading(false);
+      });
   };
 
   const handleSignup = (e) => {
@@ -64,20 +84,30 @@ export default function AuthFlow({ initialScreen = "login" }) {
     setError("");
     setLoading(true);
     
-    setTimeout(() => {
-      setLoading(false);
-      setEmployeeName(name);
-      setScreen("session");
-    }, 1200);
+    const appRole = email.toLowerCase().includes("admin") || email.toLowerCase().includes("manager") ? "admin" : "employee";
+    employeeService.addEmployee({
+      name,
+      email: email.toLowerCase(),
+      role: appRole,
+      status: "Active"
+    })
+      .then((emp) => {
+        const userSession = { ...emp };
+        localStorage.setItem("currentUser", JSON.stringify(userSession));
+        setLoading(false);
+        if (userSession.role === "admin") {
+          router.push("/dashboard");
+        } else {
+          router.push("/pos");
+        }
+      })
+      .catch((err) => {
+        setError(err.message || "Failed to create account.");
+        setLoading(false);
+      });
   };
 
-  const triggerSuccessState = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      router.push("/dashboard");
-    }, 800);
-  };
+  const triggerSuccessState = () => {};
 
   return (
     <div className="flex flex-col p-8 md:p-10 animate-slide-in w-full">

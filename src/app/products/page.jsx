@@ -90,7 +90,7 @@ export default function ProductsPage() {
 
   // Filter products based on search and category
   const filteredProducts = products.filter((product) => {
-    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = (product.name || "").toString().toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === "All Categories" || product.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });

@@ -19,6 +19,10 @@ export default function StatusBadge({ status }) {
       case "inactive":
       case "closed":
         return "text-red-500 bg-red-500/10";
+      case "reserved":
+        return "text-indigo-400 bg-indigo-400/10";
+      case "disabled":
+        return "text-[#7A7A7A] bg-[#252525]/20 border border-[#252525]";
       default:
         return "text-[#A3A3A3] bg-[#252525]/30";
     }
