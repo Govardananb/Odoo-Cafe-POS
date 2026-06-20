@@ -5,8 +5,16 @@ import Modal from "../shared/Modal";
 import { usePOS } from "@/context/POSContext";
 import { Receipt, Printer, QrCode, Heart } from "lucide-react";
 
-export default function ReceiptModal({ isOpen, onClose }) {
-  const { activeOrder } = usePOS();
+export default function ReceiptModal({ isOpen, onClose, order }) {
+  let contextActiveOrder = null;
+  try {
+    const pos = usePOS();
+    contextActiveOrder = pos?.activeOrder;
+  } catch (e) {
+    // Gracefully handle outside POSProvider rendering
+  }
+
+  const activeOrder = order || contextActiveOrder;
 
   if (!activeOrder) return null;
 

@@ -119,6 +119,11 @@ export default function Dashboard() {
         <PageHeader 
           title="Dashboard Overview"
           description="Real-time sales, orders, and restaurant operations."
+          action={{
+            label: "Launch POS Terminal",
+            href: "/pos",
+            icon: ShoppingBag
+          }}
         />
 
         {/* Filters Toolbar */}

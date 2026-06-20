@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { tableService } from "@/services/tableService";
 import { floorService } from "@/services/floorService";
+import { orderService } from "@/services/orderService";
 
 const POSContext = createContext();
 
@@ -30,13 +31,10 @@ export function POSProvider({ children }) {
   // POS view selector: 'cart' | 'payment'
   const [posView, setPosView] = useState("cart");
 
-  // POS shift session state
-  const [activePOSSession, setActivePOSSession] = useState(null);
-  const [isCloseSessionModalOpen, setIsCloseSessionModalOpen] = useState(false);
-
   // Completed Orders
   const [orders, setOrders] = useState([]);
   const [activeOrder, setActiveOrder] = useState(null);
+  const [editingOrderId, setEditingOrderId] = useState(null);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -50,19 +48,23 @@ export function POSProvider({ children }) {
         setCurrentEmployee(JSON.parse(empRaw));
       }
       
-      const ordersRaw = localStorage.getItem("odoo_cafe_pos_orders");
-      if (ordersRaw) {
-        setOrders(JSON.parse(ordersRaw));
-      }
+      orderService.getOrders().then((updatedList) => {
+        setOrders(updatedList);
+        
+        // Check if there is a draft order requested to be loaded/edited from the admin page
+        const draftIdToLoad = localStorage.getItem("odoo_cafe_pos_load_draft_id");
+        if (draftIdToLoad) {
+          const draftToLoad = updatedList.find(o => o.id === draftIdToLoad && o.status === "Draft");
+          if (draftToLoad) {
+            loadDraftOrder(draftToLoad);
+          }
+          localStorage.removeItem("odoo_cafe_pos_load_draft_id");
+        }
+      });
 
       const tableCartsRaw = localStorage.getItem("odoo_cafe_pos_table_carts");
       if (tableCartsRaw) {
         setTableCarts(JSON.parse(tableCartsRaw));
-      }
-
-      const sessionRaw = localStorage.getItem("activePOSSession");
-      if (sessionRaw) {
-        setActivePOSSession(JSON.parse(sessionRaw));
       }
     }
   }, []);
@@ -72,14 +74,6 @@ export function POSProvider({ children }) {
     setTableCarts(newCarts);
     if (typeof window !== "undefined") {
       localStorage.setItem("odoo_cafe_pos_table_carts", JSON.stringify(newCarts));
-    }
-  };
-
-  // Save orders whenever they change
-  const saveOrders = (newOrders) => {
-    setOrders(newOrders);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("odoo_cafe_pos_orders", JSON.stringify(newOrders));
     }
   };
 
@@ -215,46 +209,94 @@ export function POSProvider({ children }) {
       });
   };
 
-  // Open POS Shift Session
-  const openPOSSession = (openingCash) => {
-    const floatVal = parseFloat(openingCash) || 0;
-    const session = {
-      id: "SESS-" + Math.floor(10000 + Math.random() * 90000),
-      openingCash: floatVal,
-      cashSales: 0,
-      cardSales: 0,
-      upiSales: 0,
-      totalSales: 0,
-      transactionCount: 0,
-      employeeId: currentEmployee ? currentEmployee.id : "unknown",
-      employeeName: currentEmployee ? currentEmployee.name : "System",
-      openedAt: new Date().toISOString()
+  // Save active cart as Draft
+  const saveDraftOrder = () => {
+    if (!currentTable || cart.length === 0) return Promise.resolve(false);
+
+    const subtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+    const tax = subtotal * 0.05;
+    const discountAmt = subtotal * (discount / 100);
+    const total = subtotal + tax - discountAmt;
+
+    const draftOrder = {
+      id: editingOrderId || ("ORD-" + Math.floor(10000 + Math.random() * 90000)),
+      tableNumber: currentTable.number,
+      tableId: currentTable.id,
+      floorName: currentFloor ? currentFloor.name : "",
+      items: [...cart],
+      subtotal,
+      tax,
+      discount: discountAmt,
+      discountPct: discount,
+      total,
+      paymentMethod: null,
+      customer: activeCustomer,
+      cashier: currentEmployee ? currentEmployee.name : "System",
+      status: "Draft",
+      createdAt: new Date().toISOString()
     };
-    setActivePOSSession(session);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("activePOSSession", JSON.stringify(session));
-    }
+
+    return orderService.addOrder(draftOrder).then(() => {
+      // Clear active table cart
+      const updatedCarts = { ...tableCarts };
+      delete updatedCarts[currentTable.id];
+      saveTableCarts(updatedCarts);
+
+      // Reset states
+      setCart([]);
+      setActiveCustomer(null);
+      setDiscount(0);
+      setEditingOrderId(null);
+
+      // Update local orders list
+      return orderService.getOrders().then((updatedList) => {
+        setOrders(updatedList);
+        return true;
+      });
+    });
   };
 
-  // Close POS Shift Session
-  const closePOSSession = () => {
-    if (activePOSSession) {
-      const closedSession = {
-        ...activePOSSession,
-        closedAt: new Date().toISOString()
-      };
-      
-      if (typeof window !== "undefined") {
-        const historyRaw = localStorage.getItem("odoo_cafe_pos_session_history") || "[]";
-        const history = JSON.parse(historyRaw);
-        history.push(closedSession);
-        localStorage.setItem("odoo_cafe_pos_session_history", JSON.stringify(history));
-        
-        localStorage.removeItem("activePOSSession");
+  // Load a Draft order into current active cart
+  const loadDraftOrder = (order) => {
+    return Promise.all([
+      floorService.getFloors(),
+      tableService.getTables()
+    ]).then(([floors, tables]) => {
+      const targetFloor = floors.find(f => f.name === order.floorName);
+      const targetTable = tables.find(t => t.id === order.tableId || t.number === order.tableNumber);
+
+      if (targetTable) {
+        // Select table
+        setCurrentFloor(targetFloor || null);
+        setCurrentTable(targetTable);
+
+        // Populate cart items, customer, and discount
+        setCart(order.items || []);
+        setActiveCustomer(order.customer || null);
+        setDiscount(order.discountPct || 0);
+        setEditingOrderId(order.id);
+
+        // Update active table cart in tableCarts dictionary
+        const updatedCarts = {
+          ...tableCarts,
+          [targetTable.id]: {
+            cart: order.items || [],
+            activeCustomer: order.customer || null,
+            discount: order.discountPct || 0
+          }
+        };
+        saveTableCarts(updatedCarts);
+
+        // Delete from saved orders list to prevent duplicate drafts
+        return orderService.deleteOrder(order.id).then(() => {
+          return orderService.getOrders().then((updatedList) => {
+            setOrders(updatedList);
+            return true;
+          });
+        });
       }
-    }
-    setActivePOSSession(null);
-    setIsCloseSessionModalOpen(false);
+      return false;
+    });
   };
 
   // Settle Payment
@@ -267,7 +309,7 @@ export function POSProvider({ children }) {
     const total = subtotal + tax - discountAmt;
 
     const newOrder = {
-      id: "ORD-" + Math.floor(10000 + Math.random() * 90000),
+      id: editingOrderId || ("ORD-" + Math.floor(10000 + Math.random() * 90000)),
       tableNumber: currentTable.number,
       tableId: currentTable.id,
       floorName: currentFloor ? currentFloor.name : "",
@@ -280,53 +322,38 @@ export function POSProvider({ children }) {
       paymentMethod,
       customer: activeCustomer,
       cashier: currentEmployee ? currentEmployee.name : "System",
+      status: "Paid",
       createdAt: new Date().toISOString()
     };
 
     // Save order
-    const updatedOrders = [newOrder, ...orders];
-    saveOrders(updatedOrders);
+    return orderService.addOrder(newOrder).then((savedOrder) => {
+      // Refresh local orders list
+      return orderService.getOrders().then((updatedList) => {
+        setOrders(updatedList);
 
-    // Remove from active table carts
-    const updatedCarts = { ...tableCarts };
-    delete updatedCarts[currentTable.id];
-    saveTableCarts(updatedCarts);
+        // Remove from active table carts
+        const updatedCarts = { ...tableCarts };
+        delete updatedCarts[currentTable.id];
+        saveTableCarts(updatedCarts);
 
-    // Update active shift session totals if one is active
-    if (activePOSSession) {
-      const updatedSession = { ...activePOSSession };
-      updatedSession.transactionCount += 1;
-      updatedSession.totalSales += total;
-      
-      const method = (paymentMethod || "").toLowerCase();
-      if (method.includes("cash")) {
-        updatedSession.cashSales += total;
-      } else if (method.includes("card")) {
-        updatedSession.cardSales += total;
-      } else {
-        updatedSession.upiSales += total;
-      }
-      
-      setActivePOSSession(updatedSession);
-      if (typeof window !== "undefined") {
-        localStorage.setItem("activePOSSession", JSON.stringify(updatedSession));
-      }
-    }
-
-    // Update table status in database back to Available
-    return tableService.updateTable(currentTable.id, { status: "Available" })
-      .then((updatedTable) => {
-        setCurrentTable(updatedTable);
-        setCart([]);
-        setActiveCustomer(null);
-        setDiscount(0);
-        
-        // Open receipt modal with order
-        setActiveOrder(newOrder);
-        setIsReceiptModalOpen(true);
-        setPosView("cart");
-        return true;
+        // Update table status in database back to Available
+        return tableService.updateTable(currentTable.id, { status: "Available" })
+          .then((updatedTable) => {
+            setCurrentTable(updatedTable);
+            setCart([]);
+            setActiveCustomer(null);
+            setDiscount(0);
+            setEditingOrderId(null);
+            
+            // Open receipt modal with order
+            setActiveOrder(savedOrder);
+            setIsReceiptModalOpen(true);
+            setPosView("cart");
+            return true;
+          });
       });
+    });
   };
 
   return (
@@ -341,6 +368,7 @@ export function POSProvider({ children }) {
         discount,
         orders,
         activeOrder,
+        editingOrderId,
         searchQuery,
         selectedCategory,
         isFloorPopupOpen,
@@ -348,8 +376,6 @@ export function POSProvider({ children }) {
         isDiscountModalOpen,
         isReceiptModalOpen,
         posView,
-        activePOSSession,
-        isCloseSessionModalOpen,
         
         // Setters
         setCurrentEmployee,
@@ -361,8 +387,7 @@ export function POSProvider({ children }) {
         setIsReceiptModalOpen,
         setPosView,
         setActiveOrder,
-        setActivePOSSession,
-        setIsCloseSessionModalOpen,
+        setEditingOrderId,
         
         // Operational Actions
         selectTable,
@@ -373,8 +398,8 @@ export function POSProvider({ children }) {
         applyTableDiscount,
         sendToKitchen,
         completePayment,
-        openPOSSession,
-        closePOSSession
+        saveDraftOrder,
+        loadDraftOrder
       }}
     >
       {children}

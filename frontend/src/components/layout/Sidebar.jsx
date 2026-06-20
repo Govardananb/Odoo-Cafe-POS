@@ -18,7 +18,8 @@ import {
   Settings,
   LogOut,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Receipt
 } from "lucide-react";
 
 export default function Sidebar({ isCollapsed, setIsCollapsed }) {
@@ -53,6 +54,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
     {
       section: "SALES",
       items: [
+        { id: "orders", label: "Orders", icon: Receipt, href: "/orders" },
         { id: "payment-methods", label: "Payment Methods", icon: CreditCard, href: "/payment-methods" },
         { id: "coupons", label: "Coupons & Promotions", icon: Tag, href: "/coupons" }
       ]

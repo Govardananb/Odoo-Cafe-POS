@@ -24,9 +24,7 @@ export default function POSNavbar() {
     currentTable,
     searchQuery,
     setSearchQuery,
-    setIsFloorPopupOpen,
-    activePOSSession,
-    setIsCloseSessionModalOpen
+    setIsFloorPopupOpen
   } = usePOS();
 
   const handleLogout = () => {
@@ -146,38 +144,6 @@ export default function POSNavbar() {
           <Grid size={13} />
           <span className="hidden lg:inline">Table View</span>
         </Link>
-
-        {/* Admin Dashboard Return */}
-        {currentEmployee && currentEmployee.role === "admin" && (
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-1.5 px-3 h-9 rounded-lg border border-[#252525] hover:border-[#FF6B1A]/40 bg-[#252525]/30 text-xs text-[#A3A3A3] hover:text-[#F4F1EA] font-semibold transition-all"
-            title="Return to Backoffice Admin"
-          >
-            <LayoutDashboard size={13} />
-            <span className="hidden lg:inline">Admin</span>
-          </Link>
-        )}
-
-        {/* Active shift details & Close Shift action */}
-        {activePOSSession && (
-          <div className="flex items-center gap-2">
-            <div className="hidden md:flex items-center gap-1.5 bg-green-500/5 border border-green-500/20 text-green-400 text-[10px] font-semibold px-2.5 py-1 rounded-full">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-              <span>Float: ${activePOSSession.openingCash.toFixed(2)}</span>
-            </div>
-            
-            <button
-              id="close-shift-nav-btn"
-              onClick={() => setIsCloseSessionModalOpen(true)}
-              type="button"
-              className="flex items-center gap-1 px-2.5 h-9 rounded-lg border border-red-500/25 hover:border-red-500/40 bg-red-500/10 text-xs text-red-400 font-bold transition-all cursor-pointer"
-              title="Close Shift Summary"
-            >
-              <span>Close Shift</span>
-            </button>
-          </div>
-        )}
 
         {/* Divider */}
         <span className="h-5 w-[1px] bg-[#252525]" />
