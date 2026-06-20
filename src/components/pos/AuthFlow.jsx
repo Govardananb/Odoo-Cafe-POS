@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
-import Logo from "./Logo";
+import { useRouter } from "next/navigation";
+import Logo from "@/components/layout/Logo";
 
-export default function AuthFlow() {
-  const [screen, setScreen] = useState("login"); // 'login' | 'signup' | 'session'
+export default function AuthFlow({ initialScreen = "login" }) {
+  const router = useRouter();
+  const [screen, setScreen] = useState(initialScreen); // 'login' | 'signup' | 'session'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   
@@ -73,7 +75,7 @@ export default function AuthFlow() {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      alert(`POS Terminal Session Authorized for ${employeeName} on Register #02. Accessing POS...`);
+      router.push("/dashboard");
     }, 800);
   };
 
