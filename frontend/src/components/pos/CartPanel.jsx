@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { usePOS } from "@/context/POSContext";
 import CartItem from "./CartItem";
+import { couponService } from "@/services/couponService";
 import { 
   ShoppingBag, 
   User, 
@@ -11,7 +12,8 @@ import {
   Trash2, 
   Utensils,
   CreditCard,
-  FileText
+  FileText,
+  X
 } from "lucide-react";
 
 export default function CartPanel() {
@@ -21,11 +23,14 @@ export default function CartPanel() {
     cart,
     activeCustomer,
     discount,
+    appliedCoupon,
+    settings,
     addToCart,
     removeFromCart,
     updateQuantity,
     setTableCustomer,
     applyTableDiscount,
+    applyTableCoupon,
     sendToKitchen,
     saveDraftOrder,
     setIsCustomerModalOpen,
@@ -36,6 +41,25 @@ export default function CartPanel() {
 
   const [sending, setSending] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+
+  const handleApplyCoupon = (e) => {
+    e.preventDefault();
+    if (!couponCode.trim()) return;
+    
+    couponService.validateCoupon(couponCode, subtotal)
+      .then((couponObj) => {
+        applyTableCoupon(couponObj);
+        setCouponCode("");
+      })
+      .catch((err) => {
+        alert(err.message);
+      });
+  };
+
+  const handleRemoveCoupon = () => {
+    applyTableCoupon(null);
+  };
 
   const handleSaveDraft = () => {
     if (cart.length === 0) return;
@@ -54,11 +78,24 @@ export default function CartPanel() {
       });
   };
 
+  const currencySymbol = settings?.currencySymbol || "₹";
+  const taxRate = settings?.taxRate || 5;
+
   // Computations
   const subtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-  const tax = subtotal * 0.05; // 5% tax
-  const discountAmt = subtotal * (discount / 100);
-  const grandTotal = subtotal + tax - discountAmt;
+  const tax = subtotal * (taxRate / 100);
+
+  let manualDiscountAmt = subtotal * (discount / 100);
+  let couponDiscountAmt = 0;
+  if (appliedCoupon) {
+    if (appliedCoupon.type === "percent") {
+      couponDiscountAmt = subtotal * (appliedCoupon.value / 100);
+    } else if (appliedCoupon.type === "flat") {
+      couponDiscountAmt = appliedCoupon.value;
+    }
+  }
+  const discountAmt = manualDiscountAmt + couponDiscountAmt;
+  const grandTotal = Math.max(0, subtotal + tax - discountAmt);
 
   const handleSendToKitchen = () => {
     if (cart.length === 0) return;
@@ -195,20 +232,58 @@ export default function CartPanel() {
       {cart.length > 0 && (
         <div className="border-t border-[#252525] bg-[#111111]/40 p-4 space-y-4 shrink-0">
           
+          {/* Promo Coupon Entry */}
+          <div className="space-y-2">
+            {!appliedCoupon ? (
+              <form onSubmit={handleApplyCoupon} className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Promo Code"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                  className="flex-1 h-9 bg-[#0B0B0B] border border-[#252525] rounded-xl px-3 text-[10px] font-bold text-[#F4F1EA] uppercase tracking-wider focus:outline-none focus:border-[#FF6B1A] transition-colors font-mono"
+                />
+                <button
+                  type="submit"
+                  className="h-9 px-4 bg-[#FF6B1A]/10 border border-[#FF6B1A]/20 hover:border-[#FF6B1A]/40 text-[#FF6B1A] text-[10px] font-bold rounded-xl transition-colors cursor-pointer"
+                >
+                  Apply
+                </button>
+              </form>
+            ) : (
+              <div className="flex items-center justify-between bg-[#FF6B1A]/5 border border-[#FF6B1A]/15 px-3 py-2 rounded-xl text-[10px] font-bold text-[#FF6B1A]">
+                <span className="font-mono">{appliedCoupon.code} ({appliedCoupon.type === "percent" ? `${appliedCoupon.value}%` : `${currencySymbol}${appliedCoupon.value}`} Off)</span>
+                <button
+                  type="button"
+                  onClick={handleRemoveCoupon}
+                  className="text-[#7A7A7A] hover:text-red-500 cursor-pointer p-0.5"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* Pricing breakdown details */}
           <div className="space-y-2 text-xs font-medium text-[#A3A3A3] font-sans">
             <div className="flex justify-between items-center text-[11px]">
               <span>Subtotal</span>
-              <span className="text-[#F4F1EA] font-mono">${subtotal.toFixed(2)}</span>
+              <span className="text-[#F4F1EA] font-mono">{currencySymbol}{subtotal.toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-center text-[11px]">
-              <span>Tax (5%)</span>
-              <span className="text-[#F4F1EA] font-mono">${tax.toFixed(2)}</span>
+              <span>Tax ({taxRate}%)</span>
+              <span className="text-[#F4F1EA] font-mono">{currencySymbol}{tax.toFixed(2)}</span>
             </div>
             {discount > 0 && (
               <div className="flex justify-between items-center text-[11px] text-indigo-400">
-                <span>Discount ({discount}%)</span>
-                <span className="font-mono">-${discountAmt.toFixed(2)}</span>
+                <span>Manual Discount ({discount}%)</span>
+                <span className="font-mono">-{currencySymbol}{manualDiscountAmt.toFixed(2)}</span>
+              </div>
+            )}
+            {appliedCoupon && (
+              <div className="flex justify-between items-center text-[11px] text-[#FF6B1A]">
+                <span>Coupon Benefit</span>
+                <span className="font-mono">-{currencySymbol}{couponDiscountAmt.toFixed(2)}</span>
               </div>
             )}
             
@@ -218,7 +293,7 @@ export default function CartPanel() {
             <div className="flex justify-between items-baseline pt-1">
               <span className="text-xs font-bold text-[#F4F1EA] uppercase tracking-wider">Total Due</span>
               <span className="text-2xl font-extrabold text-[#FF6B1A] font-mono tracking-tight">
-                ${grandTotal.toFixed(2)}
+                {currencySymbol}{grandTotal.toFixed(2)}
               </span>
             </div>
           </div>

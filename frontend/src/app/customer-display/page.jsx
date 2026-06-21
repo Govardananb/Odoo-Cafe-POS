@@ -3,14 +3,27 @@
 import React, { useState, useEffect } from "react";
 import Logo from "@/components/layout/Logo";
 import { Coffee, QrCode, Heart, Sparkles, CheckCircle2 } from "lucide-react";
+import { settingsService } from "@/services/settingsService";
 
 export default function CustomerDisplayPage() {
   const [activeCart, setActiveCart] = useState(null);
   const [activeTableName, setActiveTableName] = useState("");
   const [time, setTime] = useState("");
+  const [settings, setSettings] = useState({
+    currencySymbol: "₹",
+    taxRate: 5,
+    cafeName: "OFFLINE CLUB",
+    address: "",
+    phone: ""
+  });
 
   // Poll localStorage every 1 second to get live updates from the POS terminal
   useEffect(() => {
+    // Load Settings
+    settingsService.getSettings().then((s) => {
+      setSettings(s);
+    });
+
     const updateTime = () => {
       const date = new Date();
       setTime(date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }));
@@ -54,11 +67,24 @@ export default function CustomerDisplayPage() {
     };
   }, []);
 
+  const currencySymbol = settings.currencySymbol || "₹";
+  const taxRate = settings.taxRate ?? 5;
+
   // Compute pricing totals if cart exists
   const subtotal = activeCart?.cart?.reduce((sum, item) => sum + item.product.price * item.quantity, 0) || 0;
-  const tax = subtotal * 0.05;
-  const discountAmt = subtotal * ((activeCart?.discount || 0) / 100);
-  const grandTotal = subtotal + tax - discountAmt;
+  const tax = subtotal * (taxRate / 100);
+  
+  let manualDiscountAmt = subtotal * ((activeCart?.discount || 0) / 100);
+  let couponDiscountAmt = 0;
+  if (activeCart?.appliedCoupon) {
+    if (activeCart.appliedCoupon.type === "percent") {
+      couponDiscountAmt = subtotal * (activeCart.appliedCoupon.value / 100);
+    } else if (activeCart.appliedCoupon.type === "flat") {
+      couponDiscountAmt = activeCart.appliedCoupon.value;
+    }
+  }
+  const discountAmt = manualDiscountAmt + couponDiscountAmt;
+  const grandTotal = Math.max(0, subtotal + tax - discountAmt);
 
   return (
     <div className="min-h-screen bg-[#0B0B0B] text-[#F4F1EA] font-sans flex flex-col justify-between overflow-hidden select-none p-6 md:p-8 space-y-6">
@@ -108,21 +134,21 @@ export default function CustomerDisplayPage() {
             {activeCart ? (
               activeCart.cart.map((item) => (
                 <div key={item.id} className="flex items-center justify-between gap-4 font-sans text-xs">
-                  <div className="text-left max-w-xs">
-                    <h4 className="font-bold text-[#F4F1EA]">{item.product.name}</h4>
-                    <span className="text-[9px] text-[#A3A3A3] mt-0.5 block">
-                      ${item.product.price.toFixed(2)} each
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center gap-8 shrink-0">
-                    <span className="text-[#A3A3A3] font-bold">
-                      x {item.quantity}
-                    </span>
-                    <span className="w-16 text-right font-mono font-bold text-[#F4F1EA]">
-                      ${(item.product.price * item.quantity).toFixed(2)}
-                    </span>
-                  </div>
+                   <div className="text-left max-w-xs">
+                     <h4 className="font-bold text-[#F4F1EA]">{item.product.name}</h4>
+                     <span className="text-[9px] text-[#A3A3A3] mt-0.5 block">
+                       {currencySymbol}{item.product.price.toFixed(2)} each
+                     </span>
+                   </div>
+                   
+                   <div className="flex items-center gap-8 shrink-0">
+                     <span className="text-[#A3A3A3] font-bold">
+                       x {item.quantity}
+                     </span>
+                     <span className="w-16 text-right font-mono font-bold text-[#F4F1EA]">
+                       {currencySymbol}{(item.product.price * item.quantity).toFixed(2)}
+                     </span>
+                   </div>
                 </div>
               ))
             ) : (
@@ -149,22 +175,22 @@ export default function CustomerDisplayPage() {
               <div className="space-y-1.5 font-sans">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
-                  <span className="text-[#F4F1EA] font-mono">${subtotal.toFixed(2)}</span>
+                  <span className="text-[#F4F1EA] font-mono">{currencySymbol}{subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Taxes (CGST/SGST)</span>
-                  <span className="text-[#F4F1EA] font-mono">${tax.toFixed(2)}</span>
+                  <span>Taxes ({taxRate}%)</span>
+                  <span className="text-[#F4F1EA] font-mono">{currencySymbol}{tax.toFixed(2)}</span>
                 </div>
-                {activeCart.discount > 0 && (
+                {discountAmt > 0 && (
                   <div className="flex justify-between text-indigo-400">
-                    <span>Applied Discount ({activeCart.discount}%)</span>
-                    <span className="font-mono">-${discountAmt.toFixed(2)}</span>
+                    <span>Applied Discount</span>
+                    <span className="font-mono">-{currencySymbol}{discountAmt.toFixed(2)}</span>
                   </div>
                 )}
               </div>
               <div className="flex justify-between items-baseline text-sm font-extrabold text-[#F4F1EA] border-t border-[#252525]/50 pt-3">
                 <span>Grand Total</span>
-                <span className="text-[#FF6B1A] font-mono text-lg">${grandTotal.toFixed(2)}</span>
+                <span className="text-[#FF6B1A] font-mono text-lg">{currencySymbol}{grandTotal.toFixed(2)}</span>
               </div>
             </div>
           )}

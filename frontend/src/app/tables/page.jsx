@@ -10,12 +10,15 @@ import ConfirmDialog from "@/components/shared/ConfirmDialog";
 
 import { tableService } from "@/services/tableService";
 import { floorService } from "@/services/floorService";
+import { bookingService } from "@/services/bookingService";
 
 import TableCard from "@/components/tables/TableCard";
 import ManageFloorsModal from "@/components/tables/ManageFloorsModal";
 import TableFormModal from "@/components/tables/TableFormModal";
 
-import { Grid, Plus, Edit2, Trash2, Settings, Users, Layers, LayoutGrid } from "lucide-react";
+import { Grid, Plus, Edit2, Trash2, Settings, Users, Layers, LayoutGrid, QrCode, X, Download } from "lucide-react";
+import { getCustomerUrl, getQrImageUrl } from "@/services/qrService";
+
 
 export default function TablesPage() {
   const [floors, setFloors] = useState([]);
@@ -38,13 +41,32 @@ export default function TablesPage() {
   const [deleteTableId, setDeleteTableId] = useState(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
-  // Load Floors & Tables
+  // QR Code Modal
+  const [qrTable, setQrTable] = useState(null);
+
+
+  // Load Floors, Tables & Bookings
   const loadData = () => {
     setLoading(true);
-    Promise.all([floorService.getFloors(), tableService.getTables()])
-      .then(([floorsData, tablesData]) => {
+    Promise.all([
+      floorService.getFloors(),
+      tableService.getTables(),
+      bookingService.getBookings()
+    ])
+      .then(([floorsData, tablesData, bookingsData]) => {
+        const todayStr = new Date().toISOString().split("T")[0];
+        const updatedTables = tablesData.map((table) => {
+          const hasReservation = bookingsData.some(
+            (b) => b.tableId === table.id && b.date === todayStr && b.status === "Confirmed"
+          );
+          if (hasReservation && table.status === "Available") {
+            return { ...table, status: "Reserved" };
+          }
+          return table;
+        });
+
         setFloors(floorsData);
-        setTables(tablesData);
+        setTables(updatedTables);
         
         // Default to the first active floor if not selected yet or if previous selection is invalid
         const activeFloorsList = floorsData.filter(f => f.status === "Active");
@@ -307,13 +329,22 @@ export default function TablesPage() {
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
           {filteredTables.map((table) => (
-            <TableCard
-              key={table.id}
-              table={table}
-              onEdit={handleEditTableClick}
-              onDelete={handleDeleteTableClick}
-              interactive={true}
-            />
+            <div key={table.id} style={{ position: "relative" }}>
+              <TableCard
+                table={table}
+                onEdit={handleEditTableClick}
+                onDelete={handleDeleteTableClick}
+                interactive={true}
+              />
+              {/* QR button overlay */}
+              <button
+                onClick={() => setQrTable(table)}
+                title="Show QR Code"
+                className="absolute top-2 left-2 w-7 h-7 rounded-lg bg-[#0B0B0B]/80 border border-[#252525] flex items-center justify-center text-[#A3A3A3] hover:text-[#FF6B1A] hover:border-[#FF6B1A]/40 transition-all cursor-pointer z-10"
+              >
+                <QrCode size={13} />
+              </button>
+            </div>
           ))}
         </div>
       )}
@@ -353,6 +384,86 @@ export default function TablesPage() {
           setDeleteTableId(null);
         }}
       />
+
+      {/* QR Code Modal */}
+      {qrTable && (
+        <div
+          style={{
+            position: "fixed", inset: 0, zIndex: 9999,
+            background: "rgba(0,0,0,0.85)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            padding: 24,
+          }}
+          onClick={() => setQrTable(null)}
+        >
+          <div
+            style={{
+              background: "#141414",
+              border: "1px solid #252525",
+              borderRadius: 20,
+              padding: 28,
+              maxWidth: 320,
+              width: "100%",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 16,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", width: "100%", alignItems: "center" }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F4" }}>QR Code — {qrTable.number}</span>
+              <button onClick={() => setQrTable(null)} style={{ background: "none", border: "none", color: "#666", cursor: "pointer", display: "flex" }}><X size={16} /></button>
+            </div>
+            {/* QR code rendered as URL string for demo — in prod integrate qrcode library */}
+            <div style={{
+              background: "#fff",
+              borderRadius: 12,
+              padding: 16,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 8,
+              width: "100%",
+            }}>
+              <img
+                src={getQrImageUrl(qrTable.id, 180)}
+                alt={`QR for ${qrTable.number}`}
+                width={180}
+                height={180}
+                style={{ display: "block" }}
+              />
+            </div>
+            <p style={{ fontSize: 11, color: "#666", textAlign: "center", margin: 0, wordBreak: "break-all" }}>
+              {getCustomerUrl(qrTable.id)}
+            </p>
+            <a
+              href={getQrImageUrl(qrTable.id, 400)}
+              download={`qr-${qrTable.number}.png`}
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                width: "100%",
+                padding: "11px",
+                background: "#FF6B1A",
+                border: "none",
+                borderRadius: 12,
+                color: "#000",
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+                textDecoration: "none",
+              }}
+            >
+              <Download size={14} /> Download QR
+            </a>
+          </div>
+        </div>
+      )}
 
     </DashboardLayout>
   );

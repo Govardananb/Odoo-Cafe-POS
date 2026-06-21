@@ -5,6 +5,7 @@ import POSLayout from "@/components/layout/POSLayout";
 import { usePOS } from "@/context/POSContext";
 import { floorService } from "@/services/floorService";
 import { tableService } from "@/services/tableService";
+import { bookingService } from "@/services/bookingService";
 import TableCard from "@/components/tables/TableCard";
 import { Grid, Layers } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -22,11 +23,23 @@ export default function POSTablesPage() {
     setLoading(true);
     Promise.all([
       floorService.getFloors(),
-      tableService.getTables()
-    ]).then(([floorsData, tablesData]) => {
+      tableService.getTables(),
+      bookingService.getBookings()
+    ]).then(([floorsData, tablesData, bookingsData]) => {
       const activeFloors = floorsData.filter(f => f.status === "Active");
+      const todayStr = new Date().toISOString().split("T")[0];
+      const updatedTables = tablesData.map((table) => {
+        const hasReservation = bookingsData.some(
+          (b) => b.tableId === table.id && b.date === todayStr && b.status === "Confirmed"
+        );
+        if (hasReservation && table.status === "Available") {
+          return { ...table, status: "Reserved" };
+        }
+        return table;
+      });
+
       setFloors(activeFloors);
-      setTables(tablesData);
+      setTables(updatedTables);
       
       if (activeFloors.length > 0) {
         if (currentTable) {

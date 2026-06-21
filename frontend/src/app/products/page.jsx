@@ -121,7 +121,7 @@ export default function ProductsPage() {
         onQueryChange={setSearchQuery}
         category={selectedCategory}
         onCategoryChange={setSelectedCategory}
-        categoriesList={["All Categories", "Beverages", "Meals", "Desserts", "Snacks"]}
+        categoriesList={["All Categories", "Coffee", "Tea", "Desserts", "Meals", "Combos"]}
       />
 
       {/* Products Listing Table */}

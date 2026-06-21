@@ -1,3 +1,4 @@
+import { posEventBus } from "@/utils/posEventBus";
 const STORAGE_KEY = "odoo_cafe_pos_orders";
 
 const DEFAULT_ORDERS = [

@@ -1,10 +1,11 @@
 const STORAGE_KEY = "odoo_cafe_categories";
 
 const DEFAULT_CATEGORIES = [
-  { id: "1", name: "Beverages", description: "Teas, coffees, and soft drinks", color: "#FF6B1A", status: "Active" },
-  { id: "2", name: "Meals", description: "Burgers, sandwiches, and mains", color: "#10B981", status: "Active" },
-  { id: "3", name: "Desserts", description: "Cakes, ice creams, and sweets", color: "#EC4899", status: "Active" },
-  { id: "4", name: "Snacks", description: "Quick bites and appetizers", color: "#F59E0B", status: "Active" }
+  { id: "1", name: "Coffee", description: "Premium hot and cold coffee brews", color: "#FF6B1A", status: "Active" },
+  { id: "2", name: "Tea", description: "Traditional teas and herbal infusions", color: "#10B981", status: "Active" },
+  { id: "3", name: "Desserts", description: "Cakes, pastries, and sweet treats", color: "#EC4899", status: "Active" },
+  { id: "4", name: "Meals", description: "Fresh burgers, sandwiches, and mains", color: "#F59E0B", status: "Active" },
+  { id: "5", name: "Combos", description: "Curated coffee and meal pairings", color: "#8B5CF6", status: "Active" }
 ];
 
 const getStored = () => {

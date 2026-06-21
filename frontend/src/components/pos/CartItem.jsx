@@ -2,9 +2,12 @@
 
 import React from "react";
 import { Plus, Minus, Trash2 } from "lucide-react";
+import { usePOS } from "@/context/POSContext";
 
 export default function CartItem({ item, onIncrement, onDecrement, onUpdateQty }) {
   const { product, quantity } = item;
+  const { settings } = usePOS();
+  const currencySymbol = settings?.currencySymbol || "₹";
   const lineTotal = product.price * quantity;
 
   return (
@@ -13,7 +16,7 @@ export default function CartItem({ item, onIncrement, onDecrement, onUpdateQty }
       <div className="flex-1 text-left min-w-0">
         <h4 className="text-xs font-bold text-[#F4F1EA] truncate">{product.name}</h4>
         <span className="text-[10px] text-[#7A7A7A] mt-0.5 block">
-          ${product.price.toFixed(2)} each
+          {currencySymbol}{product.price.toFixed(2)} each
         </span>
       </div>
 
@@ -46,7 +49,7 @@ export default function CartItem({ item, onIncrement, onDecrement, onUpdateQty }
       {/* Line Total */}
       <div className="w-16 text-right shrink-0">
         <span className="text-xs font-extrabold text-[#F4F1EA] font-mono">
-          ${lineTotal.toFixed(2)}
+          {currencySymbol}{lineTotal.toFixed(2)}
         </span>
       </div>
     </div>

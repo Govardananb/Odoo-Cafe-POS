@@ -4,23 +4,37 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { tableService } from "@/services/tableService";
 import { floorService } from "@/services/floorService";
 import { orderService } from "@/services/orderService";
+import { settingsService } from "@/services/settingsService";
 
 const POSContext = createContext();
 
 export function POSProvider({ children }) {
   const [currentEmployee, setCurrentEmployee] = useState(null);
   
+  // Settings state
+  const [settings, setSettings] = useState({
+    cafeName: "OFFLINE CLUB",
+    address: "12, Khader Nawaz Khan Rd, Nungambakkam, Chennai - 600006",
+    phone: "+91 44 4567 8901",
+    taxRate: 5,
+    serviceCharge: 2,
+    currencySymbol: "₹",
+    wifiSsid: "OFFLINE_CLUB_5G",
+    wifiPassword: "putyourphonedown"
+  });
+
   // Terminal state
   const [currentFloor, setCurrentFloor] = useState(null);
   const [currentTable, setCurrentTable] = useState(null);
   
-  // Table carts dictionary: { [tableId]: { cart, activeCustomer, discount } }
+  // Table carts dictionary: { [tableId]: { cart, activeCustomer, discount, appliedCoupon } }
   const [tableCarts, setTableCarts] = useState({});
   
   // Active states (loaded from active table cart)
   const [cart, setCart] = useState([]);
   const [activeCustomer, setActiveCustomer] = useState(null);
   const [discount, setDiscount] = useState(0);
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
 
   // Modal visibilities
   const [isFloorPopupOpen, setIsFloorPopupOpen] = useState(false);
@@ -40,9 +54,14 @@ export function POSProvider({ children }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
 
-  // Load employee and completed orders on mount
+  // Load settings, employee and completed orders on mount
   useEffect(() => {
     if (typeof window !== "undefined") {
+      // Load Settings
+      settingsService.getSettings().then((data) => {
+        setSettings(data);
+      });
+
       const empRaw = localStorage.getItem("currentUser");
       if (empRaw) {
         setCurrentEmployee(JSON.parse(empRaw));
@@ -88,10 +107,12 @@ export function POSProvider({ children }) {
       setCart(saved.cart || []);
       setActiveCustomer(saved.activeCustomer || null);
       setDiscount(saved.discount || 0);
+      setAppliedCoupon(saved.appliedCoupon || null);
     } else {
       setCart([]);
       setActiveCustomer(null);
       setDiscount(0);
+      setAppliedCoupon(null);
     }
     
     // Automatically close Floor Popup after selection
@@ -99,10 +120,11 @@ export function POSProvider({ children }) {
   };
 
   // Update context active state and write back to tableCarts
-  const updateActiveTableCart = (newCart, newCustomer = activeCustomer, newDiscount = discount) => {
+  const updateActiveTableCart = (newCart, newCustomer = activeCustomer, newDiscount = discount, newCoupon = appliedCoupon) => {
     setCart(newCart);
     setActiveCustomer(newCustomer);
     setDiscount(newDiscount);
+    setAppliedCoupon(newCoupon);
 
     if (currentTable) {
       const updatedCarts = {
@@ -110,7 +132,8 @@ export function POSProvider({ children }) {
         [currentTable.id]: {
           cart: newCart,
           activeCustomer: newCustomer,
-          discount: newDiscount
+          discount: newDiscount,
+          appliedCoupon: newCoupon
         }
       };
       saveTableCarts(updatedCarts);
@@ -171,13 +194,42 @@ export function POSProvider({ children }) {
   // Set Customer for current order
   const setTableCustomer = (customerObj) => {
     if (!currentTable) return;
-    updateActiveTableCart(cart, customerObj, discount);
+    updateActiveTableCart(cart, customerObj, discount, appliedCoupon);
   };
 
   // Set Discount for current order
   const applyTableDiscount = (pct) => {
     if (!currentTable) return;
-    updateActiveTableCart(cart, activeCustomer, pct);
+    updateActiveTableCart(cart, activeCustomer, pct, appliedCoupon);
+  };
+
+  // Apply Coupon object for current order
+  const applyTableCoupon = (couponObj) => {
+    if (!currentTable) return;
+    updateActiveTableCart(cart, activeCustomer, discount, couponObj);
+  };
+
+  // Update Settings Configuration
+  const updateSettings = (fields) => {
+    return settingsService.updateSettings(fields).then((updated) => {
+      setSettings(updated);
+      return updated;
+    });
+  };
+
+  // Helper to calculate discount amounts
+  const getDiscountAmount = (subtotalVal) => {
+    let manualAmt = subtotalVal * (discount / 100);
+    let couponAmt = 0;
+    if (appliedCoupon) {
+      if (appliedCoupon.type === "percent") {
+        couponAmt = subtotalVal * (appliedCoupon.value / 100);
+      } else if (appliedCoupon.type === "flat") {
+        couponAmt = appliedCoupon.value;
+      }
+    }
+    const totalD = manualAmt + couponAmt;
+    return totalD > subtotalVal ? subtotalVal : totalD;
   };
 
   // Send Order to Kitchen (KDS)
@@ -205,6 +257,9 @@ export function POSProvider({ children }) {
         kdsOrders.push(newKdsOrder);
         localStorage.setItem("odoo_cafe_kds_orders", JSON.stringify(kdsOrders));
         
+        // Trigger storage event manually for other tabs
+        window.dispatchEvent(new Event("storage"));
+        
         return true;
       });
   };
@@ -214,9 +269,10 @@ export function POSProvider({ children }) {
     if (!currentTable || cart.length === 0) return Promise.resolve(false);
 
     const subtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-    const tax = subtotal * 0.05;
-    const discountAmt = subtotal * (discount / 100);
-    const total = subtotal + tax - discountAmt;
+    const taxRate = settings ? settings.taxRate : 5;
+    const tax = subtotal * (taxRate / 100);
+    const discountAmt = getDiscountAmount(subtotal);
+    const total = Math.max(0, subtotal + tax - discountAmt);
 
     const draftOrder = {
       id: editingOrderId || ("ORD-" + Math.floor(10000 + Math.random() * 90000)),
@@ -228,6 +284,7 @@ export function POSProvider({ children }) {
       tax,
       discount: discountAmt,
       discountPct: discount,
+      appliedCoupon: appliedCoupon,
       total,
       paymentMethod: null,
       customer: activeCustomer,
@@ -246,6 +303,7 @@ export function POSProvider({ children }) {
       setCart([]);
       setActiveCustomer(null);
       setDiscount(0);
+      setAppliedCoupon(null);
       setEditingOrderId(null);
 
       // Update local orders list
@@ -270,10 +328,11 @@ export function POSProvider({ children }) {
         setCurrentFloor(targetFloor || null);
         setCurrentTable(targetTable);
 
-        // Populate cart items, customer, and discount
+        // Populate cart items, customer, discount, and coupons
         setCart(order.items || []);
         setActiveCustomer(order.customer || null);
         setDiscount(order.discountPct || 0);
+        setAppliedCoupon(order.appliedCoupon || null);
         setEditingOrderId(order.id);
 
         // Update active table cart in tableCarts dictionary
@@ -282,7 +341,8 @@ export function POSProvider({ children }) {
           [targetTable.id]: {
             cart: order.items || [],
             activeCustomer: order.customer || null,
-            discount: order.discountPct || 0
+            discount: order.discountPct || 0,
+            appliedCoupon: order.appliedCoupon || null
           }
         };
         saveTableCarts(updatedCarts);
@@ -304,9 +364,10 @@ export function POSProvider({ children }) {
     if (!currentTable || cart.length === 0) return Promise.resolve(false);
 
     const subtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-    const tax = subtotal * 0.05; // 5% tax
-    const discountAmt = subtotal * (discount / 100);
-    const total = subtotal + tax - discountAmt;
+    const taxRate = settings ? settings.taxRate : 5;
+    const tax = subtotal * (taxRate / 100);
+    const discountAmt = getDiscountAmount(subtotal);
+    const total = Math.max(0, subtotal + tax - discountAmt);
 
     const newOrder = {
       id: editingOrderId || ("ORD-" + Math.floor(10000 + Math.random() * 90000)),
@@ -318,6 +379,7 @@ export function POSProvider({ children }) {
       tax,
       discount: discountAmt,
       discountPct: discount,
+      appliedCoupon: appliedCoupon,
       total,
       paymentMethod,
       customer: activeCustomer,
@@ -344,6 +406,7 @@ export function POSProvider({ children }) {
             setCart([]);
             setActiveCustomer(null);
             setDiscount(0);
+            setAppliedCoupon(null);
             setEditingOrderId(null);
             
             // Open receipt modal with order
@@ -366,6 +429,8 @@ export function POSProvider({ children }) {
         cart,
         activeCustomer,
         discount,
+        appliedCoupon,
+        settings,
         orders,
         activeOrder,
         editingOrderId,
@@ -396,6 +461,8 @@ export function POSProvider({ children }) {
         updateQuantity,
         setTableCustomer,
         applyTableDiscount,
+        applyTableCoupon,
+        updateSettings,
         sendToKitchen,
         completePayment,
         saveDraftOrder,

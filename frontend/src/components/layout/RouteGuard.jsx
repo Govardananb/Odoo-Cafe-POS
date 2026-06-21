@@ -27,7 +27,12 @@ export default function RouteGuard({ children }) {
     const user = userRaw ? JSON.parse(userRaw) : null;
 
     // Define public routes
-    const isPublicRoute = url === "/login" || url === "/signup" || url === "/";
+    const isPublicRoute = 
+      url === "/login" || 
+      url === "/signup" || 
+      url === "/" ||
+      url.startsWith("/s/") ||
+      url.startsWith("/customer");
     
     // Define admin-only routes
     const isAdminRoute = 

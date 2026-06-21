@@ -16,6 +16,8 @@ export default function PaymentPanel() {
   const {
     cart,
     discount,
+    appliedCoupon,
+    settings,
     completePayment,
     isReceiptModalOpen,
     setIsReceiptModalOpen,
@@ -40,11 +42,24 @@ export default function PaymentPanel() {
       .catch(console.error);
   }, []);
 
+  const currencySymbol = settings?.currencySymbol || "₹";
+  const taxRate = settings?.taxRate || 5;
+
   // Calculations
   const subtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-  const tax = subtotal * 0.05; // 5% tax
-  const discountAmt = subtotal * (discount / 100);
-  const grandTotal = subtotal + tax - discountAmt;
+  const tax = subtotal * (taxRate / 100);
+  
+  let manualDiscountAmt = subtotal * (discount / 100);
+  let couponDiscountAmt = 0;
+  if (appliedCoupon) {
+    if (appliedCoupon.type === "percent") {
+      couponDiscountAmt = subtotal * (appliedCoupon.value / 100);
+    } else if (appliedCoupon.type === "flat") {
+      couponDiscountAmt = appliedCoupon.value;
+    }
+  }
+  const discountAmt = manualDiscountAmt + couponDiscountAmt;
+  const grandTotal = Math.max(0, subtotal + tax - discountAmt);
 
   const handleCheckout = () => {
     if (!selectedMethod || cart.length === 0) return;
@@ -91,7 +106,7 @@ export default function PaymentPanel() {
           <div className="flex items-baseline justify-between mt-1">
             <h3 className="text-xs font-bold text-[#F4F1EA]">Bill Amount</h3>
             <span className="text-xl font-extrabold text-[#FF6B1A] font-mono">
-              ${grandTotal.toFixed(2)}
+              {currencySymbol}{grandTotal.toFixed(2)}
             </span>
           </div>
         </div>

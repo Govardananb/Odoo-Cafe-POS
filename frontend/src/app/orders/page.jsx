@@ -10,6 +10,7 @@ import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import ReceiptModal from "@/components/pos/ReceiptModal";
 import DataTable from "@/components/shared/DataTable";
 import { orderService } from "@/services/orderService";
+import { settingsService } from "@/services/settingsService";
 import {
   Receipt,
   Search,
@@ -37,6 +38,13 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("All");
+  const [currencySymbol, setCurrencySymbol] = useState("₹");
+
+  useEffect(() => {
+    settingsService.getSettings().then((s) => {
+      setCurrencySymbol(s.currencySymbol || "₹");
+    });
+  }, []);
 
   // Drawer / Overlay State
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -250,7 +258,7 @@ export default function OrdersPage() {
           </div>
           <div>
             <h3 className="text-2xl font-extrabold tracking-tight text-[#FF6B1A] font-sans">
-              ${totalRevenue.toFixed(2)}
+              {currencySymbol}{totalRevenue.toFixed(2)}
             </h3>
             <p className="text-[9px] text-[#7A7A7A] font-sans mt-0.5">Calculated from paid orders only</p>
           </div>
@@ -346,7 +354,7 @@ export default function OrdersPage() {
                 {order.items?.map(i => `${i.quantity}x ${i.product.name}`).join(", ")}
               </td>
               <td className="py-3.5 px-5 text-right font-mono font-bold text-[#FF6B1A]">
-                ${order.total?.toFixed(2)}
+                {currencySymbol}{order.total?.toFixed(2)}
               </td>
               <td className="py-3.5 px-5">
                 <StatusBadge status={order.status} />
@@ -505,9 +513,9 @@ export default function OrdersPage() {
                         <tr key={item.id}>
                           <td className="py-3 px-4 font-bold text-[#F4F1EA]">{item.product.name}</td>
                           <td className="py-3 px-4 text-center font-semibold text-[#F4F1EA]">{item.quantity}</td>
-                          <td className="py-3 px-4 text-right font-mono">${item.product.price.toFixed(2)}</td>
+                          <td className="py-3 px-4 text-right font-mono">{currencySymbol}{item.product.price.toFixed(2)}</td>
                           <td className="py-3 px-4 text-right font-mono font-bold text-[#F4F1EA]">
-                            ${(item.product.price * item.quantity).toFixed(2)}
+                            {currencySymbol}{(item.product.price * item.quantity).toFixed(2)}
                           </td>
                         </tr>
                       ))}
@@ -520,16 +528,16 @@ export default function OrdersPage() {
               <div className="bg-[#0B0B0B] border border-[#252525] rounded-xl p-4 space-y-2.5 text-left font-sans text-xs">
                 <div className="flex justify-between text-[#A3A3A3]">
                   <span>Subtotal</span>
-                  <span className="font-mono text-[#F4F1EA]">${selectedOrder.subtotal?.toFixed(2)}</span>
+                  <span className="font-mono text-[#F4F1EA]">{currencySymbol}{selectedOrder.subtotal?.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-[#A3A3A3]">
                   <span>CGST & SGST (5%)</span>
-                  <span className="font-mono text-[#F4F1EA]">${selectedOrder.tax?.toFixed(2)}</span>
+                  <span className="font-mono text-[#F4F1EA]">{currencySymbol}{selectedOrder.tax?.toFixed(2)}</span>
                 </div>
                 {selectedOrder.discountPct > 0 && (
                   <div className="flex justify-between text-indigo-400">
                     <span>Discount ({selectedOrder.discountPct}%)</span>
-                    <span className="font-mono">-${selectedOrder.discount?.toFixed(2)}</span>
+                    <span className="font-mono">-{currencySymbol}{selectedOrder.discount?.toFixed(2)}</span>
                   </div>
                 )}
                 
@@ -538,7 +546,7 @@ export default function OrdersPage() {
                 <div className="flex justify-between items-baseline font-bold">
                   <span className="text-xs text-[#F4F1EA] uppercase tracking-wider">Grand Total</span>
                   <span className="text-xl font-extrabold text-[#FF6B1A] font-mono">
-                    ${selectedOrder.total?.toFixed(2)}
+                    {currencySymbol}{selectedOrder.total?.toFixed(2)}
                   </span>
                 </div>
 

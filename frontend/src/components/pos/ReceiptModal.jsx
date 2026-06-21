@@ -7,14 +7,24 @@ import { Receipt, Printer, QrCode, Heart } from "lucide-react";
 
 export default function ReceiptModal({ isOpen, onClose, order }) {
   let contextActiveOrder = null;
+  let contextSettings = null;
   try {
     const pos = usePOS();
     contextActiveOrder = pos?.activeOrder;
+    contextSettings = pos?.settings;
   } catch (e) {
     // Gracefully handle outside POSProvider rendering
   }
 
   const activeOrder = order || contextActiveOrder;
+  const settings = contextSettings || {
+    cafeName: "OFFLINE CLUB",
+    address: "12, Khader Nawaz Khan Rd, Nungambakkam, Chennai - 600006",
+    phone: "+91 44 4567 8901",
+    currencySymbol: "₹",
+    taxRate: 5
+  };
+  const currencySymbol = settings.currencySymbol;
 
   if (!activeOrder) return null;
 
@@ -47,14 +57,14 @@ export default function ReceiptModal({ isOpen, onClose, order }) {
           
           {/* Top Receipt header */}
           <div className="text-center space-y-1 pb-3 border-b border-dashed border-[#252525]">
-            <h3 className="text-sm font-bold tracking-[0.25em] text-[#FF6B1A] font-sans select-none">
-              ODOO CAFE
+            <h3 className="text-sm font-bold tracking-[0.25em] text-[#FF6B1A] font-sans select-none uppercase">
+              {settings.cafeName}
             </h3>
             <p className="text-[9px] text-[#7A7A7A] uppercase select-none">
-              100 Main Boulevard, Indiranagar
+              {settings.address}
             </p>
             <p className="text-[9px] text-[#7A7A7A] uppercase select-none">
-              Tel: +91 80 4910 2938
+              Tel: {settings.phone}
             </p>
           </div>
 
@@ -96,11 +106,11 @@ export default function ReceiptModal({ isOpen, onClose, order }) {
                   <div className="max-w-[180px]">
                     <span className="text-[#F4F1EA] font-bold">{item.product.name}</span>
                     <span className="text-[#7A7A7A] block text-[9px] mt-0.5">
-                      {item.quantity} x ${item.product.price.toFixed(2)}
+                      {item.quantity} x {currencySymbol}{item.product.price.toFixed(2)}
                     </span>
                   </div>
                   <span className="text-[#F4F1EA] font-bold">
-                    ${(item.product.price * item.quantity).toFixed(2)}
+                    {currencySymbol}{(item.product.price * item.quantity).toFixed(2)}
                   </span>
                 </div>
               ))}
@@ -111,21 +121,27 @@ export default function ReceiptModal({ isOpen, onClose, order }) {
           <div className="space-y-1.5 pt-1 text-[#A3A3A3]">
             <div className="flex justify-between">
               <span>Subtotal:</span>
-              <span className="text-[#F4F1EA]">${activeOrder.subtotal?.toFixed(2)}</span>
+              <span className="text-[#F4F1EA]">{currencySymbol}{activeOrder.subtotal?.toFixed(2)}</span>
             </div>
             <div className="flex justify-between">
-              <span>CGST & SGST (5%):</span>
-              <span className="text-[#F4F1EA]">${activeOrder.tax?.toFixed(2)}</span>
+              <span>Tax ({settings.taxRate}%):</span>
+              <span className="text-[#F4F1EA]">{currencySymbol}{activeOrder.tax?.toFixed(2)}</span>
             </div>
             {activeOrder.discountPct > 0 && (
               <div className="flex justify-between text-indigo-400">
                 <span>Discount ({activeOrder.discountPct}%):</span>
-                <span>-${activeOrder.discount?.toFixed(2)}</span>
+                <span>-{currencySymbol}{activeOrder.discount?.toFixed(2)}</span>
+              </div>
+            )}
+            {activeOrder.appliedCoupon && (
+              <div className="flex justify-between text-[#FF6B1A]">
+                <span>Coupon ({activeOrder.appliedCoupon.code}):</span>
+                <span>-{currencySymbol}{activeOrder.discount?.toFixed(2)}</span>
               </div>
             )}
             <div className="flex justify-between text-xs font-bold text-[#F4F1EA] pt-2 border-t border-[#252525]/30">
               <span>TOTAL PAID:</span>
-              <span className="text-[#FF6B1A]">${activeOrder.total?.toFixed(2)}</span>
+              <span className="text-[#FF6B1A]">{currencySymbol}{activeOrder.total?.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-[9px] pt-1">
               <span>Payment Mode:</span>

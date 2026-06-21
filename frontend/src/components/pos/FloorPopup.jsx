@@ -5,6 +5,7 @@ import Modal from "../shared/Modal";
 import { usePOS } from "@/context/POSContext";
 import { floorService } from "@/services/floorService";
 import { tableService } from "@/services/tableService";
+import { bookingService } from "@/services/bookingService";
 import TableCard from "../tables/TableCard";
 
 export default function FloorPopup({ isOpen, onClose }) {
@@ -15,17 +16,29 @@ export default function FloorPopup({ isOpen, onClose }) {
   const [activeFloor, setActiveFloor] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Load floors & tables when modal opens
+  // Load floors, tables & bookings when modal opens
   useEffect(() => {
     if (isOpen) {
       setLoading(true);
       Promise.all([
         floorService.getFloors(),
-        tableService.getTables()
-      ]).then(([floorsData, tablesData]) => {
+        tableService.getTables(),
+        bookingService.getBookings()
+      ]).then(([floorsData, tablesData, bookingsData]) => {
         const activeFloors = floorsData.filter(f => f.status === "Active");
+        const todayStr = new Date().toISOString().split("T")[0];
+        const updatedTables = tablesData.map((table) => {
+          const hasReservation = bookingsData.some(
+            (b) => b.tableId === table.id && b.date === todayStr && b.status === "Confirmed"
+          );
+          if (hasReservation && table.status === "Available") {
+            return { ...table, status: "Reserved" };
+          }
+          return table;
+        });
+
         setFloors(activeFloors);
-        setTables(tablesData);
+        setTables(updatedTables);
         
         if (activeFloors.length > 0) {
           // Keep current floor if already selected, else default to first

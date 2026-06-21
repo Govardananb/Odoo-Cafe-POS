@@ -18,6 +18,8 @@ export const metadata = {
 };
 
 import RouteGuard from "@/components/layout/RouteGuard";
+import { POSProvider } from "@/context/POSContext";
+import { TableProvider } from "@/context/TableContext";
 
 export default function RootLayout({ children }) {
   return (
@@ -26,9 +28,13 @@ export default function RootLayout({ children }) {
       className={`${bebasNeue.variable} ${inter.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-[#0B0B0B] text-[#F4F1EA] font-sans">
-        <RouteGuard>
-          {children}
-        </RouteGuard>
+        <POSProvider>
+          <TableProvider>
+            <RouteGuard>
+              {children}
+            </RouteGuard>
+          </TableProvider>
+        </POSProvider>
       </body>
     </html>
   );
