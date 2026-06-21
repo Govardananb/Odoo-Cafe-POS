@@ -19,14 +19,22 @@ export default function QRLandingPage() {
   const router = useRouter();
   const [table, setTable] = useState(null);
   const [activeOrder, setActiveOrder] = useState(null);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState(null); // null | "invalid" | "disabled"
 
   useEffect(() => {
     if (!tableToken) return;
 
     const resolved = resolveToken(tableToken);
     if (!resolved) {
-      setError(true);
+      setError("invalid");
+      return;
+    }
+
+    if (resolved.isDisabled) {
+      setTable({
+        tableNumber: resolved.number || resolved.tableNumber || "Unknown"
+      });
+      setError("disabled");
       return;
     }
 
@@ -51,10 +59,23 @@ export default function QRLandingPage() {
     router.replace("/customer/menu");
   }, [tableToken, router]);
 
-  if (error) {
+  if (error === "disabled") {
     return (
       <div style={styles.centered}>
-        <AlertCircle size={40} color="#FF6B1A" />
+        <AlertCircle size={40} color="#EF4444" />
+        <h2 style={styles.errorTitle}>Table Unavailable</h2>
+        <p style={styles.errorMsg}>
+          Table {table?.tableNumber || ""} is currently disabled by our staff.
+          Please contact a team member for assistance or scan a different table QR code.
+        </p>
+      </div>
+    );
+  }
+
+  if (error === "invalid") {
+    return (
+      <div style={styles.centered}>
+        <AlertCircle size={40} color="#EF4444" />
         <h2 style={styles.errorTitle}>Invalid QR Code</h2>
         <p style={styles.errorMsg}>This QR code is not recognized. Please ask staff for assistance.</p>
       </div>

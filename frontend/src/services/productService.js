@@ -1,6 +1,6 @@
 const STORAGE_KEY = "odoo_cafe_products";
 
-const DEFAULT_PRODUCTS = [
+export const DEFAULT_PRODUCTS = [
   { id: "1", name: "No Signal Latte", category: "Coffee", price: 180, status: "Active", arEnabled: true, glbModel: "https://modelviewer.dev/shared-assets/models/glTF-Sample-Assets/Models/CoffeeCup/glTF-Binary/CoffeeCup.glb", usdzModel: null, description: "Double espresso with textured milk and a touch of honey.", prepTime: "5 mins" },
   { id: "2", name: "Double Espresso", category: "Coffee", price: 120, status: "Active", arEnabled: false, glbModel: null, usdzModel: null, description: "Rich, bold, and concentrated shot of espresso.", prepTime: "3 mins" },
   { id: "3", name: "Matcha Green Tea", category: "Tea", price: 160, status: "Active", arEnabled: false, glbModel: null, usdzModel: null, description: "Ceremonial grade Japanese matcha whisked with creamy oat milk.", prepTime: "4 mins" },

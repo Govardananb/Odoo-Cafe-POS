@@ -38,6 +38,16 @@ export default function ShortQRPage() {
       return;
     }
 
+    if (resolved.isDisabled) {
+      setTable({
+        tableNumber: resolved.number || resolved.tableNumber || "Unknown",
+        floorName: "Dining Area",
+        capacity: resolved.capacity || 2
+      });
+      setStatus("disabled");
+      return;
+    }
+
     // Read floor name
     const floorsRaw = localStorage.getItem("odoo_cafe_floors");
     let floorName = "Dining Area";
@@ -66,6 +76,19 @@ export default function ShortQRPage() {
       <div style={styles.fullCenter}>
         <div style={styles.spinner} />
         <p style={styles.muted}>Verifying your table…</p>
+      </div>
+    );
+  }
+
+  if (status === "disabled") {
+    return (
+      <div style={styles.fullCenter}>
+        <ShieldX size={44} color="#EF4444" />
+        <h2 style={styles.errorTitle}>Table Unavailable</h2>
+        <p style={styles.errorMsg}>
+          Table {table?.tableNumber || ""} is currently disabled by our staff.
+          Please contact a team member for assistance or scan a different table QR code.
+        </p>
       </div>
     );
   }

@@ -3,6 +3,7 @@
 // Never touches admin-only state. Uses posEventBus for live updates.
 
 import { posEventBus } from "@/utils/posEventBus";
+import { DEFAULT_PRODUCTS } from "./productService";
 
 const PRODUCTS_KEY = "odoo_cafe_products";
 const COUPONS_KEY = "odoo_cafe_coupons";
@@ -26,8 +27,11 @@ if (typeof window !== "undefined") {
 
 export function getProducts() {
   if (typeof window === "undefined") return [];
-  const raw = localStorage.getItem(PRODUCTS_KEY);
-  if (!raw) return [];
+  let raw = localStorage.getItem(PRODUCTS_KEY);
+  if (!raw) {
+    localStorage.setItem(PRODUCTS_KEY, JSON.stringify(DEFAULT_PRODUCTS));
+    raw = JSON.stringify(DEFAULT_PRODUCTS);
+  }
   return JSON.parse(raw).filter((p) => p.status === "Active" || p.status === "active");
 }
 

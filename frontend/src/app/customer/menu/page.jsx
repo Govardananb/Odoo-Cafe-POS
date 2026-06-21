@@ -39,6 +39,24 @@ export default function CustomerMenuPage() {
   // UI state
   const [addedMap, setAddedMap] = useState({}); // productId -> flash feedback
 
+  // Set a demo table context for easier testing
+  const handleSetDemoTable = () => {
+    const demoTable = {
+      tableId: "g1",
+      tableNumber: "T01",
+      capacity: 2,
+      floorName: "Ground Floor",
+    };
+    sessionStorage.setItem("customer_table", JSON.stringify(demoTable));
+    setTableInfo(demoTable);
+
+    // Seed default products/categories if empty
+    const allProducts = getProducts();
+    setProducts(allProducts);
+    const activeCats = [...new Set(allProducts.map((p) => p.category).filter(Boolean))];
+    setCategories(["All", ...activeCats]);
+  };
+
   // Initial Load
   useEffect(() => {
     // Resolve Table Context
@@ -215,9 +233,30 @@ export default function CustomerMenuPage() {
   if (!tableInfo) {
     return (
       <div style={styles.errorCentered}>
-        <AlertCircle size={44} color="#EF4444" />
-        <h2 style={styles.errorTitle}>Invalid QR Code</h2>
-        <p style={styles.errorMsg}>Please scan the QR code on your table to start ordering.</p>
+        <AlertCircle size={48} color="#FF6B1A" style={{ marginBottom: 12 }} />
+        <h2 style={styles.errorTitle}>Table Context Required</h2>
+        <p style={styles.errorMsg}>
+          Please scan the QR code on your table to start ordering. 
+          Scanning a QR code links your order directly to your physical table for the kitchen.
+        </p>
+        <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 12, width: "100%", maxWidth: 280 }}>
+          <button
+            onClick={handleSetDemoTable}
+            style={{
+              padding: "14px 20px",
+              background: "#FF6B1A",
+              color: "#000",
+              border: "none",
+              borderRadius: 12,
+              fontWeight: 800,
+              fontSize: 14,
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+            }}
+          >
+            Test / Demo Table T01
+          </button>
+        </div>
       </div>
     );
   }
