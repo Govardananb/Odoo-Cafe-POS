@@ -25,27 +25,86 @@ const save = (data) => {
 };
 
 export const categoryService = {
-  getCategories: () => Promise.resolve(getStored()),
-  addCategory: (item) => {
+  getCategories: async () => {
+    try {
+      const res = await fetch("/api/categories");
+      if (res.ok) {
+        const body = await res.json();
+        if (body.success && body.data) {
+          return body.data;
+        }
+      }
+    } catch (err) {
+      console.warn("[categoryService] Backend offline, using localStorage fallback:", err);
+    }
+    return getStored();
+  },
+
+  addCategory: async (item) => {
+    try {
+      const res = await fetch("/api/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(item)
+      });
+      if (res.ok) {
+        const body = await res.json();
+        if (body.success && body.data) {
+          return body.data;
+        }
+      }
+    } catch (err) {
+      console.warn("[categoryService] Backend add failed, using localStorage fallback:", err);
+    }
+
     const list = getStored();
     const newItem = { color: "#FF6B1A", ...item, id: Date.now().toString(), status: "Active" };
     list.push(newItem);
     save(list);
-    return Promise.resolve(newItem);
+    return newItem;
   },
-  updateCategory: (id, fields) => {
+
+  updateCategory: async (id, fields) => {
+    try {
+      const res = await fetch(`/api/categories/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(fields)
+      });
+      if (res.ok) {
+        const body = await res.json();
+        if (body.success && body.data) {
+          return body.data;
+        }
+      }
+    } catch (err) {
+      console.warn("[categoryService] Backend update failed, using localStorage fallback:", err);
+    }
+
     const list = getStored();
     const idx = list.findIndex(i => i.id === id);
     if (idx !== -1) {
       list[idx] = { ...list[idx], ...fields };
       save(list);
-      return Promise.resolve(list[idx]);
+      return list[idx];
     }
     return Promise.reject(new Error("Category not found"));
   },
-  deleteCategory: (id) => {
+
+  deleteCategory: async (id) => {
+    try {
+      const res = await fetch(`/api/categories/${id}`, {
+        method: "DELETE"
+      });
+      if (res.ok) {
+        return true;
+      }
+    } catch (err) {
+      console.warn("[categoryService] Backend delete failed, using localStorage fallback:", err);
+    }
+
     const filtered = getStored().filter(i => i.id !== id);
     save(filtered);
-    return Promise.resolve(true);
+    return true;
   }
 };

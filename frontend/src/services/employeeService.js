@@ -41,6 +41,53 @@ const save = (data) => {
 
 export const employeeService = {
   getEmployees: () => Promise.resolve(getStored()),
+
+  login: async (email, password) => {
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+      const body = await res.json();
+      if (res.ok && body.success) {
+        return body.data; // contains token and user { id, name, email, role }
+      }
+      throw new Error(body.message || "Invalid credentials");
+    } catch (err) {
+      console.warn("[employeeService] Backend login failed, checking fallback:", err);
+      // Fallback to local storage
+      const employees = getStored();
+      const emp = employees.find(e => e.email.toLowerCase() === email.toLowerCase());
+      if (emp) {
+        return {
+          token: "mock-jwt-token",
+          user: emp
+        };
+      }
+      throw err;
+    }
+  },
+
+  signup: async (name, email, password, role) => {
+    try {
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password, role: role.toUpperCase() })
+      });
+      const body = await res.json();
+      if (res.ok && body.success) {
+        return body.data.user;
+      }
+      throw new Error(body.message || "Failed to sign up");
+    } catch (err) {
+      console.warn("[employeeService] Backend signup failed, checking fallback:", err);
+      // Fallback to local storage
+      return employeeService.addEmployee({ name, email, role, status: "Active" });
+    }
+  },
+
   addEmployee: (item) => {
     const list = getStored();
     const newItem = { ...item, id: Date.now().toString(), status: "Active" };

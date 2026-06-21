@@ -44,23 +44,18 @@ export default function AuthFlow({ initialScreen = "login" }) {
     setError("");
     setLoading(true);
     
-    employeeService.getEmployees()
-      .then((employees) => {
-        let emp = employees.find(e => e.email.toLowerCase() === email.toLowerCase());
-        if (!emp) {
-          const namePrefix = email.split("@")[0];
-          const formattedName = namePrefix.charAt(0).toUpperCase() + namePrefix.slice(1);
-          return employeeService.addEmployee({
-            name: formattedName,
-            email: email.toLowerCase(),
-            role: email.toLowerCase().includes("admin") || email.toLowerCase().includes("manager") ? "admin" : "employee",
-            status: "Active"
-          });
-        }
-        return emp;
-      })
-      .then((emp) => {
-        const userSession = { ...emp };
+    employeeService.login(email, password)
+      .then((data) => {
+        // data contains token and user: { id, name, email, role, status }
+        const user = data.user || data;
+        const userSession = {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role?.toLowerCase() || "employee",
+          status: user.status || "Active",
+          token: data.token || null
+        };
         localStorage.setItem("currentUser", JSON.stringify(userSession));
         setLoading(false);
         if (userSession.role === "admin") {
@@ -85,14 +80,15 @@ export default function AuthFlow({ initialScreen = "login" }) {
     setLoading(true);
     
     const appRole = email.toLowerCase().includes("admin") || email.toLowerCase().includes("manager") ? "admin" : "employee";
-    employeeService.addEmployee({
-      name,
-      email: email.toLowerCase(),
-      role: appRole,
-      status: "Active"
-    })
-      .then((emp) => {
-        const userSession = { ...emp };
+    employeeService.signup(name, email.toLowerCase(), password, appRole)
+      .then((user) => {
+        const userSession = {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role?.toLowerCase() || "employee",
+          status: user.status || "Active"
+        };
         localStorage.setItem("currentUser", JSON.stringify(userSession));
         setLoading(false);
         if (userSession.role === "admin") {

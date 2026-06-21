@@ -30,11 +30,50 @@ const saveProducts = (products) => {
 };
 
 export const productService = {
-  getProducts: () => {
-    return Promise.resolve(getStoredProducts());
+  getProducts: async () => {
+    try {
+      const res = await fetch("/api/products");
+      if (res.ok) {
+        const body = await res.json();
+        if (body.success && body.data) {
+          // Merge database products with default frontend assets
+          return body.data.map(p => {
+            const defaultProd = DEFAULT_PRODUCTS.find(dp => dp.name.toLowerCase() === p.name.toLowerCase());
+            return {
+              arEnabled: false,
+              glbModel: null,
+              usdzModel: null,
+              description: "Freshly prepared in our kitchen.",
+              prepTime: "5 mins",
+              ...defaultProd,
+              ...p
+            };
+          });
+        }
+      }
+    } catch (err) {
+      console.warn("[productService] Backend offline, using localStorage fallback:", err);
+    }
+    return getStoredProducts();
   },
 
-  addProduct: (product) => {
+  addProduct: async (product) => {
+    try {
+      const res = await fetch("/api/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(product)
+      });
+      if (res.ok) {
+        const body = await res.json();
+        if (body.success && body.data) {
+          return body.data;
+        }
+      }
+    } catch (err) {
+      console.warn("[productService] Backend add failed, using localStorage fallback:", err);
+    }
+
     const products = getStoredProducts();
     const newProduct = {
       ...product,
@@ -44,10 +83,26 @@ export const productService = {
     };
     products.push(newProduct);
     saveProducts(products);
-    return Promise.resolve(newProduct);
+    return newProduct;
   },
 
-  updateProduct: (id, updatedFields) => {
+  updateProduct: async (id, updatedFields) => {
+    try {
+      const res = await fetch(`/api/products/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedFields)
+      });
+      if (res.ok) {
+        const body = await res.json();
+        if (body.success && body.data) {
+          return body.data;
+        }
+      }
+    } catch (err) {
+      console.warn("[productService] Backend update failed, using localStorage fallback:", err);
+    }
+
     const products = getStoredProducts();
     const idx = products.findIndex((p) => p.id === id);
     if (idx !== -1) {
@@ -57,15 +112,26 @@ export const productService = {
         price: parseFloat(updatedFields.price) || 0
       };
       saveProducts(products);
-      return Promise.resolve(products[idx]);
+      return products[idx];
     }
     return Promise.reject(new Error("Product not found"));
   },
 
-  deleteProduct: (id) => {
+  deleteProduct: async (id) => {
+    try {
+      const res = await fetch(`/api/products/${id}`, {
+        method: "DELETE"
+      });
+      if (res.ok) {
+        return true;
+      }
+    } catch (err) {
+      console.warn("[productService] Backend delete failed, using localStorage fallback:", err);
+    }
+
     const products = getStoredProducts();
     const filtered = products.filter((p) => p.id !== id);
     saveProducts(filtered);
-    return Promise.resolve(true);
+    return true;
   }
 };

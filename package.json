@@ -1,0 +1,18 @@
+{
+  "name": "odoo-cafe-pos-root",
+  "version": "1.0.0",
+  "description": "Root configuration to automate frontend and backend integration",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install --prefix frontend && npm install --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev": "npx concurrently -n \"frontend,backend\" -c \"cyan,magenta\" \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "db:migrate": "npx prisma migrate dev --schema=backend/prisma/schema.prisma",
+    "db:seed": "npx prisma db seed --schema=backend/prisma/schema.prisma",
+    "db:generate": "npx prisma generate --schema=backend/prisma/schema.prisma"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
