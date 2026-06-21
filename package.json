@@ -8,9 +8,9 @@
     "dev:frontend": "npm run dev --prefix frontend",
     "dev:backend": "npm run dev --prefix backend",
     "dev": "npx concurrently -n \"frontend,backend\" -c \"cyan,magenta\" \"npm run dev:frontend\" \"npm run dev:backend\"",
-    "db:migrate": "npx prisma migrate dev --schema=backend/prisma/schema.prisma",
-    "db:seed": "npx prisma db seed --schema=backend/prisma/schema.prisma",
-    "db:generate": "npx prisma generate --schema=backend/prisma/schema.prisma"
+    "db:migrate": "npx --prefix backend prisma migrate dev",
+    "db:seed": "npx --prefix backend prisma db seed",
+    "db:generate": "npx --prefix backend prisma generate"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
