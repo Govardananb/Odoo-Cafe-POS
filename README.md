@@ -135,20 +135,6 @@ The reporting system provides sales insights including:
 
 Reports can be exported for further use.
 
----
-## Architecture
-
-```mermaid
-flowchart LR
-    A[Admin] --> B[POS]
-    B --> C[KDS]
-    B --> D[Customer Display]
-    E[QR Self Ordering] --> B
-    E --> C
-    B --> F[Payments]
-    F --> G[Analytics]
-```
----
 ## Tech Stack
 
 ### Backend
