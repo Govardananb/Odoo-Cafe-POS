@@ -1,620 +1,664 @@
-# OFFLINE CLUB — Odoo Cafe POS
+# Odoo Cafe POS
 
-> A complete, modern café Point-of-Sale system built for fast ordering, real-time kitchen operations, seamless payments, and intelligent restaurant management.
+> A full-stack restaurant POS platform for managing orders, tables, payments, kitchen operations, self-ordering, and real-time customer experiences.
 
-**OFFLINE CLUB** is a full-stack web-based Restaurant Point-of-Sale platform designed around the operational workflow of a modern café.
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-18+-green?logo=node.js)](https://nodejs.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-12+-blue?logo=postgresql)](https://www.postgresql.org/)
+[![Prisma](https://img.shields.io/badge/Prisma-ORM-2D3748?logo=prisma)](https://www.prisma.io/)
+[![Socket.IO](https://img.shields.io/badge/Socket.IO-realtime-black?logo=socket.io)](https://socket.io/)
 
-The system connects the **admin backend, POS terminal, kitchen display, customer-facing display, self-ordering experience, and reporting dashboard** into one unified ecosystem.
+Odoo Cafe POS is a full-stack Point of Sale system built for restaurants and cafés. It brings the front-of-house POS, kitchen display, customer-facing display, QR-based self-ordering, payments, reservations, promotions, and administration into one connected platform.
 
-It is designed to make café operations faster, clearer, and more connected — from the moment an employee opens a table to the moment an order is prepared, paid, and recorded.
+The system is designed around a real restaurant workflow:
+
+**Configure → Order → Prepare → Pay → Complete → Analyze**
 
 ---
 
-## ✦ Overview
+## Features
 
-Traditional café POS systems often separate ordering, kitchen operations, payments, and reporting into disconnected workflows.
+### POS Management
 
-OFFLINE CLUB brings these operations together through a single system.
+- Table and floor selection
+- Product search and category filtering
+- Cart and quantity management
+- Customer assignment
+- Draft, cooking, completed, and paid order lifecycle
+- Coupon and promotion handling
+- Kitchen order submission
+- Multiple payment methods
+- Receipt printing and email delivery
+
+### Kitchen Display System
+
+The Kitchen Display System (KDS) receives POS orders in real time through Socket.IO.
+
+Orders move through:
 
 ```text
-ADMIN
-  ↓
-Configure Products, Employees, Tables & Payments
-  ↓
-POS TERMINAL
-  ↓
-Take Orders → Apply Discounts → Send to Kitchen
-  ↓
-KITCHEN DISPLAY
-  ↓
 To Cook → Preparing → Completed
-  ↓
-PAYMENT
-  ↓
-Cash / Card / UPI
-  ↓
-RECEIPT + CUSTOMER DISPLAY
-  ↓
-REPORTING & ANALYTICS
-```
+````
 
-The platform also supports **QR-based self-ordering**, allowing customers to browse the menu and place orders directly from their table.
+Kitchen staff can:
 
----
+* Search orders
+* Filter by product or category
+* Update order stages
+* Track ordered quantities
+* Mark individual items as completed
 
-## ✦ Core Features
+### Customer Self-Ordering
 
-### POS Terminal
+Customers can scan a table-specific QR code to access the digital menu.
 
-* Table and floor selection
-* Product search
-* Category-based product filtering
+Supported modes:
+
+* Online Ordering
+* QR Menu
+
+The self-ordering flow supports:
+
+* Product browsing
 * Cart management
-* Quantity adjustment
-* Customer assignment
-* Coupon application
-* Automatic promotions
-* Kitchen order submission
-* Payment processing
-* Receipt printing
-* Email receipt delivery
+* Coupon codes
+* Order placement
+* Live order-status tracking
 
-### Product Management
+### Customer-Facing Display
 
-Administrators can:
+A dedicated display keeps customers informed during checkout with:
 
-* Create products
-* Edit products
-* Delete products
-* Assign categories
-* Configure prices
-* Configure units of measure
-* Configure taxes
-* Add product descriptions
+* Ordered products
+* Quantities and prices
+* Subtotal
+* Tax
+* Discounts
+* Total amount
+* Payment information
+* UPI QR code
+* Order completion confirmation
 
-### Category Management
-
-* Create, edit, and delete categories
-* Assign category colors
-* Automatically reflect category colors throughout the POS
-
-### Floor & Table Management
-
-* Create multiple floors
-* Add tables to floors
-* Configure table numbers
-* Configure seating capacity
-* Activate or deactivate tables
-* View table availability in real time
-
-### Payment Methods
+### Payments
 
 Supported payment methods:
 
 * Cash
+* UPI
 * Card / Digital Payment
-* UPI QR
 
-UPI payments dynamically generate a QR code using the configured UPI ID.
+UPI payments use the configured UPI ID to generate a payment QR code.
 
-### Coupons & Promotions
+### Inventory & Product Management
 
-#### Coupon Codes
+* Product CRUD
+* Category management
+* Pricing
+* Tax configuration
+* Units of measure
+* Product descriptions
+* Category colors
 
-Employees can manually enter coupon codes during checkout.
+### Employees & Access Control
 
-Supported discount types:
+The system supports role-based access for:
 
-* Percentage discount
-* Fixed amount discount
+* Admin
+* Employee / Cashier
 
-#### Automated Promotions
+Authentication uses JWT with password hashing, validation, CORS protection, and centralized error handling.
 
-Promotions can automatically trigger based on:
+### Reservations & Promotions
 
-* Minimum product quantity
-* Minimum order value
+* Table reservations and bookings
+* Percentage discounts
+* Fixed-amount discounts
+* Coupon codes
+* Quantity-based promotions
+* Order-value promotions
 
----
+### AR Product Visualization
 
-## ✦ Kitchen Display System
+Products can support AR visualization using GLB models, allowing compatible products to be experienced beyond the standard POS catalog.
 
-The Kitchen Display System provides a dedicated interface for kitchen staff.
+### Reporting
 
-Orders are received in real time after being sent from the POS terminal.
+The reporting system provides sales insights including:
 
-### Order Stages
-
-```text
-TO COOK
-   ↓
-PREPARING
-   ↓
-COMPLETED
-```
-
-Kitchen staff can:
-
-* View order tickets
-* Track ordered quantities
-* Move orders between stages
-* Mark individual items as completed
-* Search orders
-* Filter by product
-* Filter by category
-
----
-
-## ✦ Customer-Facing Display
-
-A dedicated customer display keeps customers informed throughout checkout.
-
-### Order View
-
-Displays:
-
-* Products
-* Quantities
-* Prices
-* Subtotal
-* Tax
-* Discounts
-* Total
-
-### Payment View
-
-Displays:
-
-* Payment information
-* Payable amount
-* UPI QR code when applicable
-
-### Completion View
-
-Displays a payment confirmation and thank-you message after successful checkout.
-
----
-
-## ✦ Self Ordering
-
-Customers can order directly from their table using a QR code.
-
-Administrators can enable:
-
-* **Online Ordering**
-* **QR Menu**
-
-Each table receives a unique QR code.
-
-```text
-Table
-  ↓
-Unique QR Code
-  ↓
-/s/<unique-token>
-  ↓
-Digital Menu
-  ↓
-Cart
-  ↓
-Order
-  ↓
-Kitchen Display
-```
-
-Customers can:
-
-* Browse products
-* Add products to cart
-* Apply coupon codes
-* Place orders
-* Track order status
-
-QR codes can also be exported as PDFs for printing and placing on tables.
-
----
-
-## ✦ Customer Management
-
-Employees can manage customers directly from the POS terminal.
-
-Customer information includes:
-
-* Name
-* Email
-* Phone number
-
-Customers can be created, edited, deleted, and attached to orders.
-
-Their email can also be used for receipt delivery.
-
----
-
-## ✦ Orders
-
-The Orders module provides session-based order management.
-
-Each order contains:
-
-* Order number
-* Date
-* Customer
-* Amount
-* Status
-
-Supported statuses:
-
-```text
-DRAFT
-PAID
-CANCELLED
-```
-
-Draft orders can be edited or deleted, while paid orders are available for viewing.
-
----
-
-## ✦ Dashboard & Reporting
-
-The reporting dashboard provides real-time operational and sales insights.
-
-### Filters
-
-* Today
-* This Week
-* This Month
-* Custom date range
-* Employee
-* Session
-* Product
-
-### Key Metrics
-
-* Total Orders
+* Total orders
 * Revenue
-* Average Order Value
+* Average order value
+* Sales trends
+* Top products
+* Top categories
+* Highest-value orders
 
-### Analytics
-
-* Sales Trend
-* Top Categories
-* Top Orders
-* Top Products
-* Category-wise Revenue
-
-Reports can be exported as:
-
-* PDF
-* XLS
+Reports can be exported for further use.
 
 ---
+## Architecture
 
-## ✦ User Roles
-
-The system is structured around three primary roles.
-
-### User / Admin
-
-Responsible for:
-
-* Product configuration
-* Categories
-* Employees
-* Tables and floors
-* Payment methods
-* Coupons and promotions
-* Self-ordering
-* Bookings
-* Reports
-* System management
-
-### Employee / Cashier
-
-Responsible for:
-
-* Opening POS sessions
-* Managing tables
-* Taking orders
-* Assigning customers
-* Applying coupons
-* Sending orders to the kitchen
-* Processing payments
-* Managing receipts
-
-### Customer
-
-Interacts with the system through:
-
-* Self-ordering
-* Digital menu
-* Order tracking
-* Customer-facing display
-
----
-
-## ✦ Design Direction
-
-OFFLINE CLUB follows a **cinematic editorial café aesthetic** rather than a conventional restaurant dashboard.
-
-The visual language is built around:
-
-* Dark luxury
-* Editorial typography
-* Large negative space
-* Product-focused imagery
-* Minimal UI chrome
-* Warm accent colors
-* Subtle motion
-* Strong visual hierarchy
-
-### Primary Palette
-
-| Token          | Value     |
-| -------------- | --------- |
-| Background     | `#0B0B0B` |
-| Surface        | `#141414` |
-| Border         | `#252525` |
-| Text Primary   | `#F4F1EA` |
-| Text Secondary | `#A3A3A3` |
-| Accent         | `#FF6B1A` |
-
-Secondary accent themes include:
-
-* Matcha
-* Berry
-* Espresso
-
-Only one accent theme is active at a time.
-
-The design system is based on an **8pt spacing system**, rounded components, oversized editorial typography, and subtle cinematic motion.
-
----
-
-## ✦ Application Architecture
-
-```text
-                    ┌────────────────────┐
-                    │   ADMIN BACKEND    │
-                    │                    │
-                    │ Products           │
-                    │ Categories         │
-                    │ Employees          │
-                    │ Tables             │
-                    │ Payments           │
-                    │ Promotions         │
-                    │ Reports            │
-                    └─────────┬──────────┘
-                              │
-                              ▼
-                    ┌────────────────────┐
-                    │    POS TERMINAL    │
-                    │                    │
-                    │ Tables             │
-                    │ Products           │
-                    │ Cart               │
-                    │ Customers          │
-                    │ Payments           │
-                    └──────┬───────┬─────┘
-                           │       │
-                ┌──────────┘       └──────────┐
-                ▼                             ▼
-       ┌────────────────┐            ┌─────────────────┐
-       │ KITCHEN DISPLAY│            │CUSTOMER DISPLAY │
-       │                │            │                 │
-       │ To Cook        │            │ Order           │
-       │ Preparing      │            │ Payment         │
-       │ Completed      │            │ Confirmation    │
-       └────────────────┘            └─────────────────┘
-                           │
-                           ▼
-                  ┌──────────────────┐
-                  │ SELF ORDERING    │
-                  │                  │
-                  │ QR Menu          │
-                  │ Online Ordering  │
-                  └──────────────────┘
+```mermaid
+flowchart LR
+    A[Admin] --> B[POS]
+    B --> C[KDS]
+    B --> D[Customer Display]
+    E[QR Self Ordering] --> B
+    E --> C
+    B --> F[Payments]
+    F --> G[Analytics]
 ```
-
 ---
-
-## ✦ Tech Stack
-
-### Frontend
-
-* Next.js
-* TypeScript
-* Tailwind CSS
+## Tech Stack
 
 ### Backend
 
-* Express.js
-* REST APIs
-* Socket.IO
+| Technology | Purpose                 |
+| ---------- | ----------------------- |
+| Node.js    | Runtime                 |
+| Express.js | REST API                |
+| Socket.IO  | Real-time communication |
+| Prisma     | ORM                     |
+| PostgreSQL | Database                |
+| JWT        | Authentication          |
+| Zod        | Input validation        |
+| bcryptjs   | Password hashing        |
 
-### Database
+### Frontend
 
-* PostgreSQL
-* Prisma ORM
-
-### Application Areas
-
-* Authentication
-* Role-based access control
-* POS operations
-* Real-time kitchen workflow
-* Payment workflow
-* Customer management
-* Reporting and analytics
-* QR-based self-ordering
+| Technology       | Purpose           |
+| ---------------- | ----------------- |
+| Next.js 16       | Web application   |
+| React 18         | UI                |
+| TypeScript       | Type safety       |
+| Tailwind CSS v4  | Styling           |
+| Socket.IO Client | Real-time updates |
+| Lucide React     | Icons             |
 
 ---
 
-## ✦ Project Structure
+## Project Structure
 
 ```text
-offline-club/
-│
-├── frontend/
-│   ├── app/
-│   ├── components/
-│   ├── lib/
-│   └── styles/
+Odoo-Cafe-POS/
 │
 ├── backend/
-│   ├── routes/
-│   ├── controllers/
-│   ├── services/
-│   └── middleware/
+│   ├── src/
+│   │   ├── index.js
+│   │   ├── routes/
+│   │   ├── middleware/
+│   │   ├── utils/
+│   │   ├── lib/
+│   │   └── validations/
+│   │
+│   ├── prisma/
+│   │   ├── schema.prisma
+│   │   ├── migrations/
+│   │   └── seed.js
+│   │
+│   └── package.json
 │
-├── prisma/
-│   ├── schema.prisma
-│   └── migrations/
+├── frontend/
+│   ├── src/
+│   │   ├── app/
+│   │   ├── components/
+│   │   ├── context/
+│   │   ├── services/
+│   │   ├── lib/
+│   │   └── utils/
+│   │
+│   ├── public/
+│   └── package.json
 │
-├── public/
-│
-├── README.md
-└── package.json
+├── package.json
+└── README.md
 ```
-
-> Adjust the folder structure above to match the final repository structure.
 
 ---
 
-## ✦ Getting Started
+## Prerequisites
 
-### 1. Clone the repository
+Before getting started, make sure you have:
+
+* Node.js `18+`
+* npm `9+`
+* PostgreSQL `12+`
+* Git
+
+Check your installed versions:
+
+```bash
+node --version
+npm --version
+psql --version
+git --version
+```
+
+---
+
+## Getting Started
+
+### 1. Clone the Repository
 
 ```bash
 git clone <repository-url>
-cd offline-club
+cd Odoo-Cafe-POS
 ```
 
-### 2. Install dependencies
+### 2. Install Dependencies
+
+The repository is organized as a monorepo with separate frontend and backend applications.
 
 ```bash
-npm install
+npm run install:all
 ```
 
-### 3. Configure environment variables
+### 3. Configure Environment Variables
 
-Create a `.env` file and configure the required database, authentication, and application variables.
+Create the backend environment file:
+
+**`backend/.env`**
 
 ```env
-DATABASE_URL=
-JWT_SECRET=
+DATABASE_URL="postgresql://user:password@localhost:5432/odoo_cafe"
+PORT=5000
+FRONTEND_URL=http://localhost:3000
+JWT_SECRET=your-secret-key-here
 ```
 
-### 4. Configure the database
+Create the frontend environment file:
+
+**`frontend/.env.local`**
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:5000
+NEXT_PUBLIC_SOCKET_URL=http://localhost:5000
+```
+
+> Do not commit real credentials or secrets to the repository.
+
+### 4. Setup Prisma
+
+Generate the Prisma client:
 
 ```bash
-npx prisma migrate dev
+npm run db:generate
 ```
 
-### 5. Start the development server
+Run database migrations:
+
+```bash
+npm run db:migrate
+```
+
+Optionally seed the database:
+
+```bash
+npm run db:seed
+```
+
+### 5. Start the Development Environment
+
+Run frontend and backend together:
 
 ```bash
 npm run dev
 ```
 
-If the frontend and backend are configured as separate applications, start both development servers according to their respective package scripts.
+Or run them independently:
 
----
+```bash
+npm run dev:frontend
+npm run dev:backend
+```
 
-## ✦ Application Screens
-
-The platform consists of multiple operational interfaces:
+Default development URLs:
 
 ```text
-Authentication
-     │
-     ├── Admin Backend
-     │     ├── Dashboard
-     │     ├── Products
-     │     ├── Categories
-     │     ├── Payment Methods
-     │     ├── Coupons & Promotions
-     │     ├── Bookings
-     │     ├── Employees
-     │     ├── KDS
-     │     └── Reports
-     │
-     ├── POS Terminal
-     │     ├── Floor View
-     │     ├── Order View
-     │     ├── Orders
-     │     ├── Customers
-     │     └── Payment
-     │
-     ├── Kitchen Display
-     │
-     ├── Customer Display
-     │
-     └── Self Ordering
+Frontend → http://localhost:3000
+Backend  → http://localhost:5000
 ```
 
 ---
 
-## ✦ Design Philosophy
+## Available Commands
 
-OFFLINE CLUB is built around one simple idea:
+### Root
 
-> **Technology should make the café experience feel more intentional, not more complicated.**
+```bash
+npm run install:all
+npm run dev
+npm run dev:frontend
+npm run dev:backend
+npm run db:generate
+npm run db:migrate
+npm run db:seed
+```
 
-The interface prioritizes speed for employees, clarity for customers, and visibility for administrators.
+### Backend
 
-Every part of the system is designed around the real operational sequence of a café:
+```bash
+cd backend
 
-**Select → Order → Prepare → Pay → Complete → Analyze**
+npm run dev
+npm run start
+```
 
----
+### Frontend
 
-## ✦ Project Goals
+```bash
+cd frontend
 
-* Build a complete full-stack POS platform
-* Connect front-of-house and kitchen workflows
-* Provide real-time order updates
-* Simplify payment processing
-* Enable QR-based self-ordering
-* Provide operational visibility through analytics
-* Create a scalable restaurant management foundation
-* Combine strong product engineering with a distinctive café brand experience
-
----
-
-## ✦ Status
-
-**Development Status:** Active Development
-
-Core modules include:
-
-* Authentication
-* Dashboard
-* Products
-* Categories
-* Employees
-* Tables & Floors
-* Payment Methods
-* POS workflow
-
-Additional modules include:
-
-* Coupons & Promotions
-* Bookings
-* Orders
-* Customers
-* Kitchen Display
-* Customer Display
-* Self Ordering
-* Reports & Analytics
+npm run dev
+npm run dev:local
+npm run build
+npm run start
+npm run lint
+npm run ngrok
+```
 
 ---
 
-## ✦ License
+## API Overview
 
-This project is developed as a project implementation for the Odoo Cafe POS challenge.
+### Authentication
+
+```text
+POST /api/auth/login
+POST /api/auth/signup
+POST /api/auth/logout
+```
+
+### POS
+
+```text
+GET/POST /api/orders
+GET/POST /api/products
+GET/POST /api/categories
+GET/POST /api/tables
+GET/POST /api/floors
+GET/POST /api/session
+GET/POST /api/payments
+GET/POST /api/kds
+```
+
+### Customers
+
+```text
+GET /api/s/[token]
+GET /api/customer-display
+GET/POST /api/customers
+GET/POST /api/bookings
+```
+
+### Revenue
+
+```text
+GET/POST /api/coupons
+GET/POST /api/promotions
+GET /api/reports
+```
+
+### Administration
+
+```text
+GET/POST /api/users
+GET/POST /api/payment-methods
+GET/POST /api/settings
+```
 
 ---
 
-## OFFLINE CLUB
+## Database
 
-**Coffee worth putting your phone down for.**
+The application uses PostgreSQL with Prisma ORM.
+
+Core models include:
+
+```text
+User
+Order
+OrderItem
+Product
+Category
+Table
+Floor
+Payment
+PaymentMethod
+Customer
+PosSession
+Coupon
+Promotion
+Booking
+Settings
+```
+
+The complete database schema is available at:
+
+```text
+backend/prisma/schema.prisma
+```
+
+---
+
+## Real-Time Communication
+
+Socket.IO is used for live application events.
+
+Real-time functionality includes:
+
+* Kitchen order updates
+* Customer display synchronization
+* Self-ordering updates
+* Staff notifications
+* Order status changes
+
+This keeps the different interfaces synchronized without requiring manual page refreshes.
+
+---
+
+## Security
+
+The backend includes:
+
+* JWT-based authentication
+* Role-Based Access Control (RBAC)
+* Password hashing with bcryptjs
+* CORS configuration
+* Zod request validation
+* Centralized error handling
+
+---
+
+## Testing
+
+The current project includes backend and end-to-end test scripts.
+
+Run the backend test:
+
+```bash
+node backend/test.js
+```
+
+Run the end-to-end test:
+
+```bash
+node e2e_test.js
+```
+
+These tests cover API behavior and key application workflows.
+
+---
+
+## Deployment
+
+### Backend
+
+Configure production environment variables:
+
+```env
+DATABASE_URL=<production-db-url>
+FRONTEND_URL=<production-frontend-url>
+JWT_SECRET=<secure-random-key>
+```
+
+Install production dependencies:
+
+```bash
+cd backend
+npm install --production
+```
+
+Run migrations:
+
+```bash
+npm run db:migrate
+```
+
+Start the server:
+
+```bash
+npm run start
+```
+
+### Frontend
+
+Build the production application:
+
+```bash
+cd frontend
+npm run build
+```
+
+Configure:
+
+```env
+NEXT_PUBLIC_API_URL=<production-api-url>
+NEXT_PUBLIC_SOCKET_URL=<production-api-url>
+```
+
+Start the application:
+
+```bash
+npm run start
+```
+
+---
+
+## Development Tips
+
+### Prisma Studio
+
+Use Prisma Studio to inspect database records:
+
+```bash
+npx prisma studio
+```
+
+### API Debugging
+
+Use the included end-to-end test script or an API client such as Postman to test backend endpoints.
+
+### Socket.IO Debugging
+
+Check the browser and backend console for connection and event logs when troubleshooting real-time functionality.
+
+---
+
+## Troubleshooting
+
+### Database Connection Fails
+
+Check that:
+
+1. PostgreSQL is running.
+2. `DATABASE_URL` is correct.
+3. The target database exists.
+4. Prisma migrations have been applied.
+
+```bash
+npm run db:migrate
+```
+
+### Frontend Cannot Connect to Backend
+
+Verify:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:5000
+```
+
+Also make sure the backend is running and the configured CORS origin matches the frontend URL.
+
+### Socket.IO Is Not Connecting
+
+Check:
+
+```env
+NEXT_PUBLIC_SOCKET_URL=http://localhost:5000
+```
+
+Then inspect the browser console and backend logs for connection errors.
+
+---
+
+## Contributing
+
+Contributions are welcome.
+
+1. Fork the repository.
+2. Create a feature branch.
+3. Make your changes.
+4. Run the relevant tests and lint checks.
+5. Commit your changes.
+6. Push your branch.
+7. Open a Pull Request.
+
+```bash
+git checkout -b feature/your-feature
+git add .
+git commit -m "Add your feature"
+git push origin feature/your-feature
+```
+
+Please keep pull requests focused and provide enough context for the changes being introduced.
+
+---
+
+## Versioning
+
+This project follows [Semantic Versioning](https://semver.org/).
+
+**Current version:** `2.0.0`
+
+---
+
+## License
+
+This project is part of the Odoo Cafe POS system.
+
+---
+
+## Acknowledgments
+
+* Odoo Cafe POS challenge
+* Open-source technologies used throughout the project
+* Contributors and collaborators
+
+---
+
+## Project Status
+
+**Active Development**
+
+The current release includes the core POS, restaurant management, real-time communication, self-ordering, payment, customer, booking, promotion, and reporting functionality.
+
+---
+
+<div align="center">
+
+### Odoo Cafe POS
+
+**One system. Every café workflow.**
+
+</div>
